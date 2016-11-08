@@ -5,7 +5,11 @@ import SequenceMiddleware from 'redux-sequence-action';
 import ThunkMiddleware from 'redux-thunk';
 import createFetchMiddleware, { applyFetchMiddleware } from 'redux-composable-fetch';
 
-const finalFetchMiddleware = applyFetchMiddleware();
+import afterFetch from './afterFetch';
+
+const finalFetchMiddleware = applyFetchMiddleware(
+  afterFetch,
+);
 
 export default function configureStore(rootReducer, history) {
   const reducers = combineReducers({
@@ -18,7 +22,7 @@ export default function configureStore(rootReducer, history) {
   const finalCreateStore = compose(
     applyMiddleware(
       SequenceMiddleware,
-      createFetchMiddleware(finalFetchMiddleware),
+      createFetchMiddleware(afterFetch),
       ThunkMiddleware,
       routerMiddleware(history),
     ),

@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { Component, PropTypes } from 'react';
 import { actions } from './PortalRedux';
 import { connect } from 'react-redux';
 
@@ -14,13 +14,17 @@ import './Portal.scss';
   ...actions,
 })
 class Portal extends Component {
+  static propTypes = {
+    getAllNodesList: PropTypes.func,
+  };
+
+  componentDidMount() {
+    this.props.getAllNodesList();
+  }
+
   render() {
     return (
-      <div>
-        <Button type="primary">Primary</Button>
-        <Button>Default</Button>
-        <Button type="ghost">Ghost</Button>
-        <Button type="dashed">Dashed</Button>
+      <div className="portal-main">
       </div>
     )
   }

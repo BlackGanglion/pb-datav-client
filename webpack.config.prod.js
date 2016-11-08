@@ -1,16 +1,14 @@
 var path = require('path');
 var fs = require('fs');
 var webpack = require('webpack');
-// var HappyPack = require('happypack');
+var ExtractTextPlugin = require('extract-text-webpack-plugin');
+
+var sassLoader = 'css!sass?sourceMap=true&sourceMapContents=true' +
+  '&includePaths[]=' + encodeURIComponent(path.resolve(__dirname, './src/styles'));
 
 module.exports = {
-  devtool: 'inline-source-map',
-  cache: true,
-
   entry: {
-    app: [
-      './src/app'
-    ],
+    app: ['./src/app'],
     vendors: [
       'react', 'react-dom', 'react-router', 'redux', 'react-redux',
       'react-router-redux', 'history', 'lodash', 'moment',
@@ -24,39 +22,22 @@ module.exports = {
   },
 
   module: {
-    rules: [{
+    loaders: [{
       test: /\.jsx?$/,
       include: [
         path.resolve(__dirname, 'src'),
       ],
-      use: [
-        'babel-loader?cacheDirectory'
-      ],
-      // happy: { id: 'js' },
+      use: ['babel'],
     }, {
       test: /\.s?css$/,
       include: [
         path.resolve(__dirname, 'src'),
         path.resolve(__dirname, './node_modules', 'antd'),
       ],
-      use: [
-        'style-loader',
-        {
-          loader: 'css-loader',
-          options: {
-            sourceMap: true,
-          }
-        },
-        {
-          loader: 'sass-loader',
-          options: {
-            sourceMap: true,
-            sourceMapContents: true,
-            includePaths: [path.resolve(__dirname, './src/styles')]
-          }
-        },
-      ],
-      // happy: { id: 'scss' },
+      loader: ExtractTextPlugin.extract({
+        fallbackLoader: "style-loader",
+        loader: sassLoader
+      }),
     }]
   },
 
@@ -77,15 +58,26 @@ module.exports = {
       name: 'vendors',
       filename: 'vendors.js'
     }),
-    new webpack.ContextReplacementPlugin(/moment[\/\\]locale$/, /en-gb|zh-cn/),
+    new webpack.optimize.DedupePlugin(),
+    new webpack.optimize.UglifyJsPlugin({
+      comments: false,
+      compress: {
+        unused: true,
+        dead_code: true,
+      },
+    }),
     new webpack.DefinePlugin({
       'process.env': {
-        'NODE_ENV': JSON.stringify('development')
+        'NODE_ENV': JSON.stringify('production')
       },
-      __DEV__: true,
+      __DEV__: false,
     }),
-    new webpack.HotModuleReplacementPlugin(),
-    // new HappyPack({ id: 'js' }),
-    // new HappyPack({ id: 'scss' }),
+    new ExtractTextPlugin({
+      filename: "app.css",
+      disable: false,
+      allChunks: true,
+    }),
+    new webpack.NoErrorsPlugin(),
+    new webpack.ContextReplacementPlugin(/moment[\/\\]locale$/, /en-gb|zh-cn/),
   ],
 };
