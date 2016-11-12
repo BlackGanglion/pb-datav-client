@@ -4,9 +4,13 @@ import { getUrl } from 'utils/UrlMap';
 const ACTION_PREFIX = 'portal/';
 
 const initialState = {
+  isLoadingMap: true,
   isLoadingAllNodes: true,
   hasAllNodesError: false,
   allNodesList: [],
+  selectedKeys: ['map'],
+
+  clusterCount: 3,
 };
 
 const LOAD_ALLNODES_LIST = ACTION_PREFIX + 'LOAD_ALLNODES_LIST';
@@ -20,11 +24,42 @@ const getAllNodesList = () => {
   }
 }
 
+const CLOSE_MAP_LOADING = ACTION_PREFIX + 'CLOSE_MAP_LOADING';
+
+const closeLoading = () => {
+  return {
+    type: CLOSE_MAP_LOADING,
+  }
+}
+
+const CHANGE_SELECT_KEYS = ACTION_PREFIX + 'CHANGE_SELECT_KEYS';
+
+const changeSelectKeys = (key) => {
+  return {
+    type: CHANGE_SELECT_KEYS,
+    payload: key,
+  }
+}
+
+const CHANGE_CLUSTER_COUNT = ACTION_PREFIX + 'CHANGE_CLUSTER_COUNT';
+
+const changeClusterCount = (value) => {
+  return {
+    type: CHANGE_CLUSTER_COUNT,
+    payload: value,
+  }
+}
+
 export const actions = {
   getAllNodesList,
+  closeLoading,
+  changeSelectKeys,
+  changeClusterCount,
 };
 
 function PortalReducer(state = initialState, action) {
+  const { payload } = action;
+
   switch (action.type) {
     case LOAD_ALLNODES_LIST: {
       return {
@@ -34,9 +69,10 @@ function PortalReducer(state = initialState, action) {
       }
     }
     case LOAD_ALLNODES_LIST_SUCCESS: {
-      console.log(action);
+      const { nodes } = payload;
       return {
         ...state,
+        allNodesList: nodes,
         isLoadingAllNodes: false,
         hasAllNodesError: false,
       }
@@ -46,6 +82,24 @@ function PortalReducer(state = initialState, action) {
         ...state,
         isLoadingAllNodes: false,
         hasAllNodesError: true,
+      }
+    }
+    case CLOSE_MAP_LOADING: {
+      return {
+        ...state,
+        isLoadingMap: false,
+      }
+    }
+    case CHANGE_SELECT_KEYS: {
+      return {
+        ...state,
+        selectedKeys: [payload],
+      }
+    }
+    case CHANGE_CLUSTER_COUNT: {
+      return {
+        ...state,
+        clusterCount: payload,
       }
     }
     default:

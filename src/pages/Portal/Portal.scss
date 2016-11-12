@@ -1,0 +1,41 @@
+.portal-main {
+  position: relative;
+  .portal-map {
+    width: 100%;
+    height: 100%;
+  }
+  .portal-left-list {
+    position: absolute;
+    top: 10px;
+    left: 64px;
+  }
+  .portal-main-list {
+    position: absolute;
+    top: 10px;
+    left: 360px;
+  }
+  .portal-meun {
+    background-color: rgba(45, 183, 245, 0.6);
+    padding: 20px;
+    border-radius: 5px;
+    color: #fff;
+    .ant-menu {
+      background: none;
+      .ant-menu-item {
+        .icon {
+          margin-right: 8px;
+        }
+      }
+    }
+  }
+  .portal-control {
+    background-color: rgba(45, 183, 245, 0.6);
+    padding: 20px;
+    border-radius: 5px;
+    margin-top: 20px;
+    text-align: center;
+    .ant-btn {
+      margin-top: 10px;
+    }
+  }
+}
