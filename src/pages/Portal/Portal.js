@@ -4,7 +4,7 @@ import { connect } from 'react-redux';
 import _ from 'lodash';
 import Events from 'oui-dom-events';
 
-import { Menu, Icon, Spin, Input, Button } from 'antd';
+import { Menu, Icon, Spin, Input, Button, Progress, Modal } from 'antd';
 
 import './Portal.scss';
 
@@ -14,6 +14,8 @@ const DEFAULT_Y = 30.2428426084585;
 import markersCluster from 'components/BaiduMap/MarkersCluster';
 import circleLocalSearch from 'components/BaiduMap/Circle';
 import Kcluster from 'components/Kcluster/Kcluster';
+
+const colors = ["#E6421A", "#AECC33", "#338FCC", "#3CC472", "#723CC4"];
 
 @connect((state, ownProps) => {
   return {
@@ -31,11 +33,19 @@ class Portal extends Component {
     isLoadingMap: PropTypes.bool,
     selectedKeys: PropTypes.array,
     clusterCount: PropTypes.number,
+    clusterStatus: PropTypes.string,
+    isClusterZoom: PropTypes.bool,
+    kSelectedNode: PropTypes.object,
+    clusters: PropTypes.array,
 
     // actions
     closeLoading: PropTypes.func,
     changeSelectKeys: PropTypes.func,
     changeClusterCount: PropTypes.func,
+    changeClusterStatus: PropTypes.func,
+    changeIsZoom: PropTypes.func,
+    kSelectedNodeFn: PropTypes.func,
+    updateClusters: PropTypes.func,
   };
 
   constructor(props) {
@@ -43,6 +53,7 @@ class Portal extends Component {
 
     this.state = {
       height: document.documentElement.clientHeight,
+      percent: 0,
     };
   }
 
@@ -97,11 +108,112 @@ class Portal extends Component {
     this.props.changeSelectKeys(key);
   }
 
+  renderPortalInfo() {
+    const { selectedKeys, kSelectedNode } = this.props;
+    if (selectedKeys[0] === 'kCluster') {
+      if (_.isEmpty(kSelectedNode)) return null;
+
+      const { id, x, y, name, rx, ry, address, servicetime } = kSelectedNode;
+      return (<div className="station-info">
+        <div className="im">
+          <strong>{`${id}: ${name}`}</strong>
+        </div>
+        <div>
+          <strong>实际地理坐标:</strong>
+        </div>
+        <div>{`(${rx}, ${ry})`}</div>
+        <div>
+          <strong>百度地理坐标</strong>
+        </div>
+        <div>{`(${x}, ${y})`}</div>
+        <div>
+          <strong>地址:</strong> {`${address}`}
+        </div>
+        <div>
+          <strong>服务时间:</strong>{`${servicetime}`}
+        </div>
+      </div>);
+    }
+
+    return null;
+  }
+
+  changePercent(delay) {
+    const { percent } = this.state;
+    const newPercent = Math.floor((percent + 100 / delay * 100) * 100) / 100;
+    this.setState({
+      percent: newPercent >= 100 ? 100 : newPercent,
+    });
+    if (newPercent < 100) {
+      setTimeout(this.changePercent.bind(this, delay), 100);
+    }
+  }
+
+  setProgress(delay) {
+    setTimeout(this.changePercent.bind(this, delay), 100);
+  }
+
+  handleClusterInfo(index) {
+    const cluster = this.props.clusters[index];
+
+    const items = cluster.map((e, i) => {
+      const { name, id } = e;
+      return (<p key={i}>{`${id}: ${name}`}</p>);
+    });
+
+    Modal.info({
+      title: `当前聚类 ${index} 节点信息(共 ${cluster.length} 个节点)`,
+      content: (
+        <div className="cluster-info-model">{items}</div>
+      ),
+      onOk() {},
+    });
+  }
+
+  renderPortalCluster() {
+    const { selectedKeys, clusters } = this.props;
+
+    if (selectedKeys[0] === 'kCluster') {
+      const { percent } = this.state;
+
+      if (percent == 100 && clusters.length > 0) {
+        return clusters.map((cluster, i) => {
+          const color = colors[i];
+
+          return (
+            <Button
+              className="portal-cluster-item"
+              style={{
+                backgroundColor: color,
+              }}
+              key={i}
+              onClick={this.handleClusterInfo.bind(this, i)}
+            >
+              {`聚类${i} (${cluster.length})`}
+            </Button>
+          );
+        });
+      } else {
+        return (
+          <Progress
+            type="circle"
+            percent={percent}
+            width={80}
+          />
+        );
+      }
+    }
+
+    return null;
+  }
+
+
   render() {
     const { height } = this.state;
 
     const { selectedKeys, isLoadingAllNodes, isLoadingMap,
-      clusterCount, allNodesList } = this.props;
+      clusterCount, allNodesList, clusterStatus, isClusterZoom,
+      changeIsZoom, kSelectedNode } = this.props;
 
     return (
       <Spin
@@ -119,16 +231,16 @@ class Portal extends Component {
                 onClick={::this.handleMeunClick}
               >
                 <Menu.Item key="map">
-                  <i className="icon icon-map"/>全局站点底图
+                  <i className="icon icon-map"/>全局 - 站点底图
                 </Menu.Item>
                 <Menu.Item key="kCluster">
-                  <i className="icon icon-k"/>全局站点K-means聚类
+                  <i className="icon icon-k"/>全局 - 站点K-means聚类
                 </Menu.Item>
                 <Menu.Item key="force">
-                  <i className="icon icon-force"/>区域力引导布局
+                  <i className="icon icon-force"/>区域 - 力引导布局
                 </Menu.Item>
                 <Menu.Item key="areaLine">
-                  <i className="icon icon-line"/>区域时间飞线
+                  <i className="icon icon-line"/>区域 - 时间飞线
                 </Menu.Item>
               </Menu>
             </div>
@@ -138,19 +250,48 @@ class Portal extends Component {
                 <Input
                   placeholder="请输入聚类个数"
                   value={clusterCount}
+                  disabled={clusterStatus === 'loading'}
                   onChange={(e) => {
                     this.props.changeClusterCount(e.target.value);
                   }}
                 />
                 <Button
                   type="primary"
-                  // onClick={::this.start}
-                >开始聚类</Button>
+                  loading={clusterStatus === 'loading'}
+                  onClick={() => {
+                    this.setState({ percent: 0 });
+                    this.props.changeClusterStatus('loading');
+                  }}
+                >
+                  {clusterStatus === 'loading' ? '聚类中...' : '开始聚类'}
+                </Button>
+                <Button
+                  type="primary"
+                  onClick={() => { this.props.changeIsZoom(false); }}
+                >放大复原</Button>
               </div>) : null}
+            </div>
+            <div className="portal-cluster">
+              {this.renderPortalCluster()}
+            </div>
+            <div className="portal-info">
+              {this.renderPortalInfo()}
             </div>
           </div>
           <div className="portal-main-list">
-            {selectedKeys[0] === 'kCluster' ? <Kcluster data={allNodesList} /> : null}
+            {selectedKeys[0] === 'kCluster' ?
+              <Kcluster
+                data={allNodesList}
+                count={clusterCount}
+                status={clusterStatus}
+                changeStatus={this.props.changeClusterStatus}
+                isZoom={isClusterZoom}
+                changeIsZoom={this.props.changeIsZoom}
+                kSelectedNode={kSelectedNode}
+                kSelectedNodeFn={this.props.kSelectedNodeFn}
+                updateClusters={this.props.updateClusters}
+                setProgress={this.setProgress.bind(this)}
+              /> : null}
           </div>
         </div>
       </Spin>

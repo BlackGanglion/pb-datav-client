@@ -1,5 +1,6 @@
 import { combineReducers } from 'redux';
 import { getUrl } from 'utils/UrlMap';
+import _ from 'lodash';
 
 const ACTION_PREFIX = 'portal/';
 
@@ -10,7 +11,14 @@ const initialState = {
   allNodesList: [],
   selectedKeys: ['map'],
 
+  // K聚类
   clusterCount: 3,
+  // loading, success
+  clusterStatus: 'success',
+  isClusterZoom: false,
+  kSelectedNode: null,
+  kAreaList: [],
+  clusters: [],
 };
 
 const LOAD_ALLNODES_LIST = ACTION_PREFIX + 'LOAD_ALLNODES_LIST';
@@ -50,11 +58,51 @@ const changeClusterCount = (value) => {
   }
 }
 
+const CHANGE_CLUSTER_STATUS = ACTION_PREFIX + 'CHANGE_CLUSTER_STATUS';
+
+const changeClusterStatus = (status) => {
+  return {
+    type: CHANGE_CLUSTER_STATUS,
+    payload: status,
+  }
+}
+
+const CHANGE_IS_ZOOM = ACTION_PREFIX + 'CHANGE_IS_ZOOM';
+
+const changeIsZoom = (isZoom) => {
+  return {
+    type: CHANGE_IS_ZOOM,
+    payload: isZoom,
+  }
+}
+
+const K_SELECT_NODE = ACTION_PREFIX + 'K_SELECT_NODE';
+
+const kSelectedNodeFn = (nodeId) => {
+  return {
+    type: K_SELECT_NODE,
+    payload: nodeId,
+  }
+}
+
+const UPDATE_CLUSTERS = ACTION_PREFIX + 'UPDATE_CLUSTERS';
+
+const updateClusters = (clusters) => {
+  return {
+    type: UPDATE_CLUSTERS,
+    payload: clusters,
+  }
+}
+
 export const actions = {
   getAllNodesList,
   closeLoading,
   changeSelectKeys,
   changeClusterCount,
+  changeClusterStatus,
+  changeIsZoom,
+  kSelectedNodeFn,
+  updateClusters,
 };
 
 function PortalReducer(state = initialState, action) {
@@ -100,6 +148,33 @@ function PortalReducer(state = initialState, action) {
       return {
         ...state,
         clusterCount: payload,
+      }
+    }
+    case CHANGE_CLUSTER_STATUS: {
+      return {
+        ...state,
+        clusterStatus: payload,
+      }
+    }
+    case CHANGE_IS_ZOOM: {
+      return {
+        ...state,
+        isClusterZoom: payload,
+      }
+    }
+    case K_SELECT_NODE: {
+      const { allNodesList } = state;
+
+      const kSelectedNode = _.find(allNodesList, { id: payload });
+      return {
+        ...state,
+        kSelectedNode,
+      }
+    }
+    case UPDATE_CLUSTERS: {
+      return {
+        ...state,
+        clusters: payload,
       }
     }
     default:

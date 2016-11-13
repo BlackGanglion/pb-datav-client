@@ -1,5 +1,7 @@
+@import 'variables';
+
 .portal-k-cluster {
   padding: 20px;
-  background-color: rgba(45, 183, 245, 0.6);
+  background-color: $background-primary;
   border-radius: 5px;
 }
