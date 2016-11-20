@@ -1,4 +1,8 @@
-export default function circleLocalSearch(map) {
+import _ from 'lodash';
+
+import { randomColor } from 'utils/utils';
+
+export default function circleLocalSearch(map, nodes, updateClusters) {
   const options = {
     pageCapacity: 100,
     renderOptions: {
@@ -6,19 +10,22 @@ export default function circleLocalSearch(map) {
     },
     onSearchComplete: function(results) {
       const num = results.getCurrentNumPois();
-      console.log(num);
-      /*
-      const num = results.getCurrentNumPois();
-      let res;
+      const nodeList = [];
       for(let i = 0; i < num; i++) {
         const item = results.getPoi(i);
-        const name = item.title || '';
-        const no = item.address.split('-')[0];
-        res = res ? `${res}&${no}=${name}` : `?${no}=${name}`;
+        const id = Number(item.address.split('-')[0]);
+
+        const selectNode = _.find(nodes, { id });
+
+        nodeList.push(selectNode);
       }
-      console.log(res);
-      renderForceChart(res);
-      */
+
+      const res = [{
+        nodeList,
+        color: randomColor(),
+      }];
+
+      updateClusters(res);
     },
   };
 

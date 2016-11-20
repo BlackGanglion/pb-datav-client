@@ -6,9 +6,11 @@ import SequenceMiddleware from 'redux-sequence-action';
 import ThunkMiddleware from 'redux-thunk';
 import createFetchMiddleware, { applyFetchMiddleware } from 'redux-composable-fetch';
 
+import beforeFetch from './beforeFetch';
 import afterFetch from './afterFetch';
 
 const finalFetchMiddleware = applyFetchMiddleware(
+  beforeFetch,
   afterFetch,
 );
 

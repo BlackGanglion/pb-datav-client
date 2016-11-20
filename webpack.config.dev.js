@@ -4,8 +4,14 @@ var webpack = require('webpack');
 // var HappyPack = require('happypack');
 
 module.exports = {
+  profile: true,
   devtool: 'inline-source-map',
   cache: true,
+  watch: true,
+  watchOptions: {
+    aggregateTimeout: 300,
+    poll: 300
+  },
 
   entry: {
     app: [

@@ -1,21 +1,20 @@
 import React, { Component, PropTypes } from 'react';
 import * as d3 from 'd3';
 
-import { getRandomNum, contains } from 'utils/utils';
+import { getRandomNum, contains, randomColor } from 'utils/utils';
 
 import { Progress, message } from 'antd';
 
 import './Kcluster.scss';
 
 const width = 870;
-const height = 650;
+const height = 550;
 
 const xPadding = 50;
 const yPadding = 0;
-const xAxisHeight = 600;
+const xAxisHeight = 500;
 const xAxisWidth = 800;
 
-const colors = ["#E6421A", "#AECC33", "#338FCC", "#3CC472", "#723CC4"];
 const edge = 15;
 const delayTime = 5;
 
@@ -32,6 +31,7 @@ class Kcluster extends Component {
     changeStatus: PropTypes.func,
     updateClusters: PropTypes.func,
     setProgress: PropTypes.func,
+    isRender: PropTypes.bool,
   }
 
   constructor(props) {
@@ -128,7 +128,10 @@ class Kcluster extends Component {
       } else {
         indices.push(index);
         i++;
-        this.centroids.push(data[index]);
+        this.centroids.push({
+          ...data[index],
+          color: randomColor(),
+        });
       }
     }
 
@@ -140,7 +143,7 @@ class Kcluster extends Component {
       .attr("class", function(d, i) {
         return `cluster${i}`;
       })
-      .attr("fill", function(d, i) { return colors[i]; })
+      .attr("fill", function(d, i) { return d.color; })
       .attr("x", (d) => {
         return this.xScale(d.x) - (edge / 2);
       })
@@ -166,7 +169,7 @@ class Kcluster extends Component {
       .transition()
       .duration(100)
       .delay(this.delay)
-      .attr("fill", colors[clusterId]);
+      .attr("fill", this.centroids[clusterId].color);
     this.delay += delayTime;
   }
 
@@ -240,7 +243,12 @@ class Kcluster extends Component {
       }
     }
 
-    return clusters;
+    return clusters.map((cluster, i) => {
+      return {
+        nodeList: cluster,
+        color: this.centroids[i].color,
+      };
+    });
   }
 
   zoomed() {
@@ -268,12 +276,6 @@ class Kcluster extends Component {
     this.cluster.call(this.zoom);
   }
 
-  componentDidMount() {
-    this.initAxis(this.props.data);
-    this.initNode(this.props.data);
-    this.handleZoom();
-  }
-
   componentWillUnMount() {
     this.cluster = null;
     this.xScale = null;
@@ -290,8 +292,12 @@ class Kcluster extends Component {
   }
 
   componentWillReceiveProps(nextProps) {
-    if (!this.props.data.length && nextProps.data.length) {
-      this.initMap(nextProps.data);
+    if (!this.props.isRender && nextProps.isRender) {
+      if (!this.cluster) {
+        this.initAxis(this.props.data);
+        this.initNode(this.props.data);
+        this.handleZoom();
+      }
     }
     if (this.props.isZoom && !nextProps.isZoom) {
       this.resetZoom();
@@ -313,9 +319,13 @@ class Kcluster extends Component {
   }
 
   render() {
+    const { children, isRender } = this.props;
     return (
-      <div className="portal-k-cluster">
+      <div className="portal-k-cluster" style={{
+        display: isRender ? 'block' : 'none',
+      }}>
         <svg className="cluster" style={{ width, height, }} />
+        {children}
       </div>
     )
   }

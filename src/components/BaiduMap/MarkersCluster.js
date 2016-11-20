@@ -1,11 +1,16 @@
-export default function(map, nodes) {
+export default function(map, nodes, kSelectedNodeFn) {
   const markers = [];
   nodes.forEach((e) => {
     const { x, y } = e;
 
     const pt = new BMap.Point(x, y);
 
-    const marker = new BMap.Marker(pt);
+    const myIcon = new BMap.Icon(
+      "https://img.alicdn.com/tps/TB10jXNOpXXXXc9XVXXXXXXXXXX-32-32.png",
+      new BMap.Size(32, 32)
+    );
+
+    const marker = new BMap.Marker(pt, {icon: myIcon});
 
     const content = `
       <div class="info-window">
@@ -29,6 +34,7 @@ export default function(map, nodes) {
 
     var infowindow = new BMap.InfoWindow(content);
     marker.addEventListener("click", function(){
+      kSelectedNodeFn(e.id);
       this.openInfoWindow(infowindow);
     });
 

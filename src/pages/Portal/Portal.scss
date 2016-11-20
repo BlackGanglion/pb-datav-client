@@ -16,6 +16,29 @@
     position: absolute;
     top: 10px;
     left: 360px;
+    .portal-cluster {
+      background-color: $background-primary;
+      height: 60px;
+      width: 790px;
+      padding: 10px;
+      margin-bottom: 15px;
+      overflow-x: scroll;
+      white-space: nowrap;
+      .cluster-empty {
+        color: #BBD0DA;
+        font-size: 18px;
+        line-height: 40px;
+        text-align: center;
+        display: block;
+        width: 100%;
+      }
+      .portal-cluster-item {
+        line-height: 30px;
+        text-align: center;
+        color: #fff;
+        margin: 0 4px;
+      }
+    }
   }
   .portal-meun {
     background-color: $background-primary;
@@ -41,23 +64,16 @@
       margin: 5px auto;
       display: block;
     }
-  }
-  .portal-cluster {
-    background-color: $background-primary;
-    padding: 20px;
-    border-radius: 5px;
-    margin-top: 10px;
-    max-height: 120px;
-    overflow: scroll;
-    .ant-progress {
-      margin-left: 80px;
-    }
-    .portal-cluster-item {
-      width: 100%;
-      line-height: 24px;
-      text-align: center;
-      color: #fff;
-      margin: 4px 0;
+    .portal-control-force {
+      .force-date-tip {
+        color: red;
+      }
+      > div {
+        margin: 4px 0;
+        > span {
+          margin-right: 4px;
+        }
+      }
     }
   }
   .portal-info {
@@ -71,6 +87,14 @@
 .cluster-info-model {
   max-height: 200px;
   overflow: scroll;
+}
+
+.small-title {
+  font-size: 14px;
+  text-align: left;
+  font-weight: bold;
+  margin-bottom: 8px;
+  color: #2db7f5;
 }
 
 

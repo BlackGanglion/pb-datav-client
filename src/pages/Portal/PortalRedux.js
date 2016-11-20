@@ -19,6 +19,13 @@ const initialState = {
   kSelectedNode: null,
   kAreaList: [],
   clusters: [],
+  id: 0,
+
+  // 力引导布局
+  selectedDate: '2014-03-23',
+  selectedHour: '08',
+  selectedCluster: {},
+  nodeLinkData: [],
 };
 
 const LOAD_ALLNODES_LIST = ACTION_PREFIX + 'LOAD_ALLNODES_LIST';
@@ -94,6 +101,63 @@ const updateClusters = (clusters) => {
   }
 }
 
+const UPDATE_SELECTED_DATE = ACTION_PREFIX + 'UPDATE_SELECTED_DATE';
+
+const updateSelectedDate = (date) => {
+  return {
+    type: UPDATE_SELECTED_DATE,
+    payload: date,
+  }
+}
+
+const UPDATE_SELECTED_HOUR = ACTION_PREFIX + 'UPDATE_SELECTED_HOUR';
+
+const updateSelectedHour = (hour) => {
+  return {
+    type: UPDATE_SELECTED_HOUR,
+    payload: hour,
+  }
+}
+
+const GET_NODE_LINK = ACTION_PREFIX + 'GET_NODE_LINK';
+const GET_NODE_LINK_SUCCESS = ACTION_PREFIX + 'GET_NODE_LINK_SUCCESS';
+const GET_NODE_LINK_FAILURE = ACTION_PREFIX + 'GET_NODE_LINK_FAILURE';
+
+const getNodeLinkData = (cluster, date, hour) => {
+  console.log(cluster, date, hour);
+
+  const dateList = date.split('-');
+
+  const nodeId = cluster.nodeList.map((node, i) => {
+    return node.id;
+  }).join(',');
+
+  /*
+  http://localhost:8080/endWork/nodeConnect.json?
+  nodeId=5509,5202,5199,5400,5399,8004,8033,5198,5203
+  &day=2014_04_16
+  &hour=16
+  */
+  return {
+    types: [GET_NODE_LINK, GET_NODE_LINK_SUCCESS, GET_NODE_LINK_FAILURE],
+    url: getUrl('nodeConnect'),
+    params: {
+      nodeId,
+      day: `${dateList[0]}_${dateList[1]}_${dateList[2]}`,
+      hour,
+    }
+  }
+}
+
+const SELECTED_CLUSTER_FN = ACTION_PREFIX + 'SELECTED_CLUSTER_FN';
+
+const selectedClusterFn = (cluster) => {
+  return {
+    type: SELECTED_CLUSTER_FN,
+    payload: cluster,
+  }
+}
+
 export const actions = {
   getAllNodesList,
   closeLoading,
@@ -103,6 +167,10 @@ export const actions = {
   changeIsZoom,
   kSelectedNodeFn,
   updateClusters,
+  updateSelectedDate,
+  updateSelectedHour,
+  getNodeLinkData,
+  selectedClusterFn,
 };
 
 function PortalReducer(state = initialState, action) {
@@ -142,6 +210,7 @@ function PortalReducer(state = initialState, action) {
       return {
         ...state,
         selectedKeys: [payload],
+        selectedClusterId: {},
       }
     }
     case CHANGE_CLUSTER_COUNT: {
@@ -172,10 +241,59 @@ function PortalReducer(state = initialState, action) {
       }
     }
     case UPDATE_CLUSTERS: {
+      const { id, clusters } = state;
       return {
         ...state,
-        clusters: payload,
+        clusters: [
+          ...clusters,
+          // id为编号，selected是否被选中
+          ...payload.map((item, i) => {
+            return {
+              ...item,
+              id: id + i,
+              selected: false,
+            }
+          }),
+        ],
+        id: id + payload.length,
       }
+    }
+    case UPDATE_SELECTED_DATE: {
+      return {
+        ...state,
+        selectedDate: payload,
+      }
+    }
+    case UPDATE_SELECTED_HOUR: {
+      return {
+        ...state,
+        selectedHour: payload,
+      }
+    }
+    case SELECTED_CLUSTER_FN: {
+      const { id } = payload;
+      return {
+        ...state,
+        selectedCluster: payload,
+        clusters: state.clusters.map((cluster) => {
+          if (cluster.id === id) {
+            return {
+              ...cluster,
+              selected: true,
+            }
+          }
+          return {
+            ...cluster,
+            selected: false,
+          };
+        })
+      }
+    }
+    case GET_NODE_LINK_SUCCESS: {
+      return {
+        ...state,
+        nodeLinkData: payload,
+      };
     }
     default:
       return state;
