@@ -2,6 +2,8 @@ import { combineReducers } from 'redux';
 import { getUrl } from 'utils/UrlMap';
 import _ from 'lodash';
 
+import ForceReducer from 'components/ForceChart/ForceRedux';
+
 const ACTION_PREFIX = 'portal/';
 
 const initialState = {
@@ -11,7 +13,7 @@ const initialState = {
   allNodesList: [],
   selectedKeys: ['map'],
 
-  // K聚类
+  // K区域
   clusterCount: 3,
   // loading, success
   clusterStatus: 'success',
@@ -23,9 +25,9 @@ const initialState = {
 
   // 力引导布局
   selectedDate: '2014-03-23',
-  selectedHour: '08',
+  selectedHour: '-1',
   selectedCluster: {},
-  nodeLinkData: [],
+  nodeLinkData: {},
 };
 
 const LOAD_ALLNODES_LIST = ACTION_PREFIX + 'LOAD_ALLNODES_LIST';
@@ -138,6 +140,18 @@ const getNodeLinkData = (cluster, date, hour) => {
   &day=2014_04_16
   &hour=16
   */
+
+  if (hour === "-1") {
+    return {
+      types: [GET_NODE_LINK, GET_NODE_LINK_SUCCESS, GET_NODE_LINK_FAILURE],
+      url: getUrl('nodeConnect'),
+      params: {
+        nodeId,
+        day: `${dateList[0]}_${dateList[1]}_${dateList[2]}`,
+      }
+    }
+  }
+
   return {
     types: [GET_NODE_LINK, GET_NODE_LINK_SUCCESS, GET_NODE_LINK_FAILURE],
     url: getUrl('nodeConnect'),
@@ -302,6 +316,7 @@ function PortalReducer(state = initialState, action) {
 
 export default combineReducers({
   page: PortalReducer,
+  force: ForceReducer,
 });
 
 

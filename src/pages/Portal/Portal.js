@@ -42,7 +42,7 @@ class Portal extends Component {
     clusters: PropTypes.array,
     selectedDate: PropTypes.string,
     selectedHour: PropTypes.string,
-    nodeLinkData: PropTypes.array,
+    nodeLinkData: PropTypes.object,
     selectedCluster: PropTypes.object,
 
     // actions
@@ -79,7 +79,7 @@ class Portal extends Component {
     map.enableScrollWheelZoom();
     map.addControl(new BMap.NavigationControl()); //添加默认缩放平移控件
 
-    // 请求所有节点完成点聚类
+    // 请求所有节点完成点区域
     markersCluster(map, nodes, kSelectedNodeFn);
     circleLocalSearch(map, nodes, updateClusters);
 
@@ -119,7 +119,7 @@ class Portal extends Component {
     const { key } = e;
 
     if (key === 'force' || key === 'areaLine') {
-      message.success('请选择聚类与时间', 5);
+      message.info('请选择区域与时间', 5);
     }
 
     this.props.changeSelectKeys(key);
@@ -176,7 +176,7 @@ class Portal extends Component {
     });
 
     Modal.info({
-      title: `当前聚类 ${index} 节点信息(共 ${cluster.length} 个节点)`,
+      title: `当前区域 ${index} 节点信息(共 ${cluster.length} 个节点)`,
       content: (
         <div className="cluster-info-model">{items}</div>
       ),
@@ -187,7 +187,7 @@ class Portal extends Component {
   renderPortalCluster() {
     const { clusters, selectedKeys, selectedClusterFn } = this.props;
 
-    // 生成聚类还是选择聚类
+    // 生成区域还是选择区域
     const isSelectCluster = selectedKeys[0] === 'force' || selectedKeys[0] === 'areaLine'
       ? true : false;
 
@@ -209,7 +209,7 @@ class Portal extends Component {
                 this.handleClusterInfo.bind(this, i)
             }
           >
-            {`聚类${id} (${nodeList.length})`}
+            {`区域${id} (${nodeList.length})`}
           </Button>
         );
       });
@@ -225,7 +225,7 @@ class Portal extends Component {
       return (
         <div className="portal-control-cluster">
           <Input
-            placeholder="请输入聚类个数"
+            placeholder="请输入区域个数"
             value={clusterCount}
             disabled={clusterStatus === 'loading'}
             onChange={(e) => {
@@ -240,7 +240,7 @@ class Portal extends Component {
               this.props.changeClusterStatus('loading');
             }}
           >
-            {clusterStatus === 'loading' ? '聚类中...' : '开始聚类'}
+            {clusterStatus === 'loading' ? '区域中...' : '开始区域'}
           </Button>
           <Button
             type="primary"
@@ -251,6 +251,9 @@ class Portal extends Component {
     }
     if (selectedKeys[0] === 'force') {
       const options = [];
+      options.push(
+        <Option value="-1" key="-1">全天</Option>
+      );
       for(let i = 0; i <= 23; i++) {
         if (i >= 10) {
           options.push(
@@ -318,7 +321,7 @@ class Portal extends Component {
                   <i className="icon icon-map"/>全局 - 站点底图
                 </Menu.Item>
                 <Menu.Item key="kCluster">
-                  <i className="icon icon-k"/>全局 - 站点K-means聚类
+                  <i className="icon icon-k"/>全局 - 站点K-means区域
                 </Menu.Item>
                 <Menu.Item key="force">
                   <i className="icon icon-force"/>区域 - 力引导布局
@@ -367,6 +370,7 @@ class Portal extends Component {
               cluster={selectedCluster}
               requestData={this.props.getNodeLinkData}
               isRender={selectedKeys[0] === 'force'}
+              kSelectedNodeFn={this.props.kSelectedNodeFn}
             >
             </ForceChart>
           </div>

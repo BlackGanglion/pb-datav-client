@@ -21,7 +21,7 @@ const delayTime = 5;
 class Kcluster extends Component {
   static propTypes = {
     data: PropTypes.array,
-    // 聚类个数
+    // 区域个数
     count: PropTypes.number,
     isZoom: PropTypes.bool,
     changeIsZoom: PropTypes.func,
@@ -225,7 +225,7 @@ class Kcluster extends Component {
         }
       }
 
-      // 调整聚类中心
+      // 调整区域中心
       for (let i = 0; i < data.length; i++) {
         clusters[clusterAssment[i]].push(data[i]);
       }
