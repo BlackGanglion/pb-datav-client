@@ -11,6 +11,8 @@ function addParams(url, params = {}) {
     }
   });
 
+  console.log(finalUrl);
+
   return finalUrl;
 }
 

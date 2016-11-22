@@ -24,7 +24,7 @@ export default function configureStore(rootReducer, history) {
   const finalCreateStore = compose(
     applyMiddleware(
       SequenceMiddleware,
-      createFetchMiddleware(afterFetch),
+      createFetchMiddleware(finalFetchMiddleware),
       ThunkMiddleware,
       routerMiddleware(history),
     ),
