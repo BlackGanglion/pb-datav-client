@@ -1,8 +1,28 @@
 import React, { PureComponent, PropTypes } from 'react';
+import _ from 'lodash';
+import { Modal } from 'antd';
 
-import { find } from 'utils/utils';
+import { find, randomColor } from 'utils/utils';
 
 export default class ForceChartSVG extends PureComponent {
+  constructor(props) {
+    super(props);
+
+    this.state = {
+      clubNodesMap: [],
+    }
+  }
+
+  componentWillReceiveProps(nextProps) {
+    if (!_.isEqual(nextProps.clubNodes, this.props.clubNodes)) {
+      this.setState({
+        clubNodesMap: nextProps.clubNodes.map(() => {
+          return false;
+        })
+      })
+    }
+  }
+
   renderLink() {
     const { data, lastTime, width, height } = this.props;
     const { nodes, links } = data;
@@ -81,10 +101,10 @@ export default class ForceChartSVG extends PureComponent {
   }
 
   renderNodes(nodes, isClub = false) {
-    const { lastTime, width, height } = this.props;
+    const { lastTime, width, height, allNodesList, updateClusters } = this.props;
 
     return nodes.map((node, i) => {
-      const { ox, oy, cx, cy, r, id, group, path, queue } = node;
+      const { ox, oy, cx, cy, r, id, group, path, queue, clubNodeNumber } = node;
 
       let color = '#6e5398';
       let textColor = 'black';
@@ -124,10 +144,48 @@ export default class ForceChartSVG extends PureComponent {
             strokeWidth={2}
             fill={color}
             key={`circle${i}`}
-            onClick={isClub ? () => {} : this.handleNodeClick.bind(this, id)}
+            onClick={isClub ? () => {
+              // 是否加入聚类
+              Modal.info({
+                title: '提示',
+                content: (
+                  <p>当前区域是否需要加入上方区域选择区</p>
+                ),
+                onOk() {
+                  const nodeList = queue.map((item, i) => {
+                    const id = Number(item);
+                    return _.find(allNodesList, { id });
+                  })
+                  updateClusters([{
+                    nodeList,
+                    color: randomColor(),
+                  }]);
+                },
+              });
+            } : this.handleNodeClick.bind(this, id)}
             style={{
               cursor: "pointer",
+              opacity: !isClub && this.state.clubNodesMap[clubNodeNumber] ? 0.4 : 1,
             }}
+            onMouseOver={
+              isClub ? () => {
+                this.setState({
+                  clubNodesMap: this.state.clubNodesMap.map((e, j) => {
+                    if (i === j) return true;
+                    return false;
+                  })
+                })
+              } : () => {}
+            }
+            onMouseOut={
+              isClub ? () => {
+                this.setState({
+                  clubNodesMap: this.state.clubNodesMap.map((e, j) => {
+                    return false;
+                  })
+                })
+              } : () => {}
+            }
           >
             <animate
               attributeName="cx"
@@ -172,22 +230,6 @@ export default class ForceChartSVG extends PureComponent {
           </text>
         </g>
       );
-
-
-      /*
-      if (queue) {
-        text.addEventListener("mouseover", (e) => {
-          queue.forEach((item, i) => {
-            $(`#${item}`)[0].setAttribute('opacity', 0.5);
-          });
-        });
-        text.addEventListener("mouseout", (e) => {
-          queue.forEach((item, i) => {
-            $(`#${item}`)[0].setAttribute('opacity', 1);
-          });
-        });
-      }
-      */
     });
   }
 

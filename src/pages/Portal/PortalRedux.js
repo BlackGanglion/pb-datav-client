@@ -254,6 +254,9 @@ function PortalReducer(state = initialState, action) {
         kSelectedNode,
       }
     }
+    /*
+    格式 nodeList, id, selected, color
+    */
     case UPDATE_CLUSTERS: {
       const { id, clusters } = state;
       return {

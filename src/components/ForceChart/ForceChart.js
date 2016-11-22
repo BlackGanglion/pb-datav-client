@@ -18,6 +18,7 @@ const height = 595;
 @connect((state, ownProps) => {
   return {
     ...state.portal.force,
+    allNodesList: state.portal.page.allNodesList,
   };
 }, {
   ...actions,
@@ -31,6 +32,7 @@ class ForceChart extends PureComponent {
     isRender: PropTypes.bool,
     requestData: PropTypes.func,
     updateForceChartConfig: PropTypes.func,
+    updateClusters: PropTypes.func,
   }
 
   constructor(props) {
@@ -106,7 +108,8 @@ class ForceChart extends PureComponent {
 
   render() {
     const { data, cluster, date, hour, isRender,
-      lastTime, kSelectedNodeFn, clubNodes } = this.props;
+      lastTime, kSelectedNodeFn, clubNodes,
+      allNodesList, updateClusters } = this.props;
 
     let tip = '';
     if (_.isEmpty(data)) {
@@ -145,6 +148,8 @@ class ForceChart extends PureComponent {
           clubNodes={this.clubNodes}
           lastTime={lastTime}
           kSelectedNodeFn={kSelectedNodeFn}
+          allNodesList={allNodesList}
+          updateClusters={updateClusters}
         />
         {this.state.isConfigOpen ? (
           <div className="right-config-open">

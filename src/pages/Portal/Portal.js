@@ -371,8 +371,8 @@ class Portal extends Component {
               requestData={this.props.getNodeLinkData}
               isRender={selectedKeys[0] === 'force'}
               kSelectedNodeFn={this.props.kSelectedNodeFn}
-            >
-            </ForceChart>
+              updateClusters={this.props.updateClusters}
+            />
           </div>
         </div>
       </Spin>
