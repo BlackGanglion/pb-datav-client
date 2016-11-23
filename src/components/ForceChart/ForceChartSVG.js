@@ -28,7 +28,7 @@ export default class ForceChartSVG extends PureComponent {
     const { nodes, links } = data;
 
     return links.map((link, i) => {
-      const { source, target, value } = link;
+      const { source, target, value, relations } = link;
 
       const { node: sourceNode } = find(nodes, { id: source }, 'id');
       const { node: targetNode } = find(nodes, { id: target }, 'id');
@@ -58,6 +58,9 @@ export default class ForceChartSVG extends PureComponent {
           stroke={'red'}
           strokeWidth={1 + value / 4}
           key={`line-${i}`}
+          onClick={() => {
+            console.log(link);
+          }}
         >
           <animate
             attributeName="x1"

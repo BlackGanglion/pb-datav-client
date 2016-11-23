@@ -3,6 +3,7 @@ import { getUrl } from 'utils/UrlMap';
 import _ from 'lodash';
 
 import ForceReducer from 'components/ForceChart/ForceRedux';
+import AreaLineReducer from 'components/AreaLine/AreaLineRedux';
 
 const ACTION_PREFIX = 'portal/';
 
@@ -320,6 +321,7 @@ function PortalReducer(state = initialState, action) {
 export default combineReducers({
   page: PortalReducer,
   force: ForceReducer,
+  areaLine: AreaLineReducer,
 });
 
 

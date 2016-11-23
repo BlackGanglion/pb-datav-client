@@ -1,4 +1,5 @@
 node_modules/
+AreaLine*
 *.log
 *DS_Store*
 watch/

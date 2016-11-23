@@ -19,6 +19,7 @@ import markersCluster from 'components/BaiduMap/MarkersCluster';
 import circleLocalSearch from 'components/BaiduMap/Circle';
 import Kcluster from 'components/Kcluster/Kcluster';
 import ForceChart from 'components/ForceChart/ForceChart';
+import AreaLine from 'components/AreaLine/AreaLine';
 
 @connect((state, ownProps) => {
   return {
@@ -327,7 +328,7 @@ class Portal extends Component {
                   <i className="icon icon-force"/>区域 - 力引导布局
                 </Menu.Item>
                 <Menu.Item key="areaLine">
-                  <i className="icon icon-line"/>区域 - 时间飞线
+                  <i className="icon icon-line"/>区域 - 区域动态飞线
                 </Menu.Item>
               </Menu>
             </div>
@@ -372,6 +373,12 @@ class Portal extends Component {
               isRender={selectedKeys[0] === 'force'}
               kSelectedNodeFn={this.props.kSelectedNodeFn}
               updateClusters={this.props.updateClusters}
+            />
+            <AreaLine
+              width={800}
+              height={600}
+              cluster={selectedCluster}
+              isRender={selectedKeys[0] === 'areaLine'}
             />
           </div>
         </div>

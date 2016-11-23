@@ -76,21 +76,33 @@ class ForceChart extends PureComponent {
   componentWillReceiveProps(nextProps) {
     const { data, date, hour, cluster } = nextProps;
 
-    // 更新数据时更新图
-    if (!_.isEqual(data, this.props.data)
-      || this.checkConfigProps(nextProps, this.props)) {
+    // 渲染卡片，如果数据不为空，更新图
+    if (!this.props.isRender
+      && nextProps.isRender
+      && !_.isEmpty(nextProps.data)) {
       this.clubNodes = calculateForceChart(width, height, nextProps);
       this.setState({
         svgKey: Math.random(),
       });
     }
 
-    // 更新时间和区域时
-    if (!_.isEqual(date, this.props.date)
-      || !_.isEqual(hour, this.props.hour)
-      || !_.isEqual(cluster, this.props.cluster)) {
-      if (!_.isEmpty(cluster) && !_.isEmpty(date) && !_.isEmpty(hour)) {
-        this.props.requestData(cluster, date, hour, width, height);
+    if (nextProps.isRender && this.props.isRender) {
+      // 更新数据或配置时，更新图
+      if (!_.isEqual(data, this.props.data)
+        || this.checkConfigProps(nextProps, this.props)) {
+        this.clubNodes = calculateForceChart(width, height, nextProps);
+        this.setState({
+          svgKey: Math.random(),
+        });
+      }
+
+      // 更新时间或区域时，更新数据
+      if (!_.isEqual(date, this.props.date)
+        || !_.isEqual(hour, this.props.hour)
+        || !_.isEqual(cluster, this.props.cluster)) {
+        if (!_.isEmpty(cluster) && !_.isEmpty(date) && !_.isEmpty(hour)) {
+          this.props.requestData(cluster, date, hour, width, height);
+        }
       }
     }
   }

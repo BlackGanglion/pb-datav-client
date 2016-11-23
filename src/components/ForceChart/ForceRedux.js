@@ -12,6 +12,7 @@ const initialState = {
   g: 0.81,
   gc: 4,
   modelValue: null,
+  curLink: {},
 }
 
 const UPDATE_FORCECHART_CONFIG = ACTION_PREFIX + 'UPDATE_FORCECHART_CONFIG';
@@ -20,6 +21,15 @@ const updateForceChartConfig = function(config) {
   return {
     type: UPDATE_FORCECHART_CONFIG,
     payload: config,
+  }
+}
+
+const SET_CURRENT_LINK = ACTION_PREFIX + 'SET_CURRENT_LINK';
+
+const setCurLink = function(link) {
+  return {
+    type: SET_CURRENT_LINK,
+    payload: link,
   }
 }
 
