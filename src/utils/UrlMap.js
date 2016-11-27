@@ -4,6 +4,7 @@ const URL_MAP = {
   // 获取全部节点信息
   allNodes: 'allNodes.json',
   nodeConnect: 'nodeConnect.json',
+  calCluster: 'CalCluster.json',
 };
 
 const getUrl = (key) => {

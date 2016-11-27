@@ -16,6 +16,7 @@ const DEFAULT_X = 120.159040411661;
 const DEFAULT_Y = 30.2428426084585;
 
 import markersCluster from 'components/BaiduMap/MarkersCluster';
+import pointsCluster from 'components/BaiduMap/PointsCluster';
 import circleLocalSearch from 'components/BaiduMap/Circle';
 import Kcluster from 'components/Kcluster/Kcluster';
 import ForceChart from 'components/ForceChart/ForceChart';
@@ -45,8 +46,11 @@ class Portal extends Component {
     selectedHour: PropTypes.string,
     nodeLinkData: PropTypes.object,
     selectedCluster: PropTypes.object,
+    allStaMethod: PropTypes.string,
+    loadingTip: PropTypes.string,
 
     // actions
+    openLoading: PropTypes.func,
     closeLoading: PropTypes.func,
     changeSelectKeys: PropTypes.func,
     changeClusterCount: PropTypes.func,
@@ -58,6 +62,8 @@ class Portal extends Component {
     updateSelectedHour: PropTypes.func,
     getNodeLinkData: PropTypes.func,
     selectedClusterFn: PropTypes.func,
+    calClustersDis: PropTypes.func,
+    changeAllStaMethod: PropTypes.func,
   };
 
   constructor(props) {
@@ -72,17 +78,22 @@ class Portal extends Component {
   initMap(nodes) {
     const { updateClusters, kSelectedNodeFn } = this.props;
     // 创建地图实例
-    const map = new BMap.Map("allmap");
+    this.map = new BMap.Map("allmap");
     // 创建点坐标
     const point = new BMap.Point(DEFAULT_X, DEFAULT_Y);
 
-    map.centerAndZoom(point, 12); // 初始化地图，设置中心点坐标和地图级别
-    map.enableScrollWheelZoom();
-    map.addControl(new BMap.NavigationControl()); //添加默认缩放平移控件
+    // 初始化地图，设置中心点坐标和地图级别
+    this.map.centerAndZoom(point, 12);
+    this.map.enableScrollWheelZoom();
 
-    // 请求所有节点完成点区域
-    markersCluster(map, nodes, kSelectedNodeFn);
-    circleLocalSearch(map, nodes, updateClusters);
+    // 添加默认缩放平移控件
+    this.map.addControl(new BMap.NavigationControl());
+
+    // 百度地图原生聚类
+    this.markersCluster = markersCluster(this.map, nodes, kSelectedNodeFn);
+
+    // 初始化地图圈画
+    circleLocalSearch(this.map, nodes, updateClusters);
 
     this.props.closeLoading();
   }
@@ -107,12 +118,32 @@ class Portal extends Component {
   componentWillUnmount() {
     Events.off(window, 'resize', this.handleReheightFn);
     this.handleReheightFn = null;
+    this.map = null;
+    this.pointCollection = null;
+    this.markersCluster = null;
+  }
+
+  reInitMap(props) {
+    const { allNodesList, allStaMethod, kSelectedNodeFn } = props;
+    if (allStaMethod === 'scatter' && this.map) {
+      this.markersCluster.clearMarkers();
+      this.pointCollection = pointsCluster(this.map, allNodesList, kSelectedNodeFn);
+    }
+
+    if (allStaMethod === 'cluster' && this.map) {
+      this.pointCollection.clear();
+      this.markersCluster = markersCluster(this.map, allNodesList, kSelectedNodeFn);
+    }
   }
 
   componentWillReceiveProps(nextProps) {
     if (!this.props.allNodesList.length && nextProps.allNodesList.length) {
       // 初始化地图
       this.initMap(nextProps.allNodesList);
+    }
+
+    if (this.props.allStaMethod !== nextProps.allStaMethod) {
+      this.reInitMap(nextProps);
     }
   }
 
@@ -221,7 +252,33 @@ class Portal extends Component {
 
   renderPortalControl() {
     const { selectedKeys, clusterCount, clusterStatus,
-      selectedDate, selectedHour } = this.props;
+      selectedDate, selectedHour, allStaMethod } = this.props;
+    if (selectedKeys[0] === 'map') {
+      return (
+        <div className="portal-control-map">
+          <Button
+            type="primary"
+            disabled={allStaMethod === 'scatter'}
+            onClick={() => {
+              this.props.changeAllStaMethod('scatter');
+              setTimeout(() => {
+                this.props.closeLoading();
+              }, 0);
+            }}
+          >散点模式</Button>
+          <Button
+            type="primary"
+            disabled={allStaMethod === 'cluster'}
+            onClick={() => {
+              this.props.changeAllStaMethod('cluster');
+              setTimeout(() => {
+                this.props.closeLoading();
+              }, 0);
+            }}
+          >聚类模式</Button>
+        </div>
+      );
+    }
     if (selectedKeys[0] === 'kCluster') {
       return (
         <div className="portal-control-cluster">
@@ -301,11 +358,12 @@ class Portal extends Component {
     const { selectedKeys, isLoadingAllNodes, isLoadingMap,
       clusterCount, allNodesList, clusterStatus, isClusterZoom,
       changeIsZoom, kSelectedNode,
-      selectedDate, selectedHour, nodeLinkData, selectedCluster } = this.props;
+      selectedDate, selectedHour, nodeLinkData, selectedCluster,
+      loadingTip } = this.props;
 
     return (
       <Spin
-        tip="系统功能初始化中..."
+        tip={loadingTip}
         spinning={isLoadingAllNodes || isLoadingMap}
       >
         <div className="portal-main" style={{ height }}>
@@ -355,6 +413,7 @@ class Portal extends Component {
               kSelectedNode={kSelectedNode}
               kSelectedNodeFn={this.props.kSelectedNodeFn}
               updateClusters={this.props.updateClusters}
+              calClustersDis={this.props.calClustersDis}
               setProgress={this.setProgress.bind(this)}
               isRender={selectedKeys[0] === 'kCluster'}
             >

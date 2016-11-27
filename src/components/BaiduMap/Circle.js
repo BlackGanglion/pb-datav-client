@@ -29,9 +29,9 @@ export default function circleLocalSearch(map, nodes, updateClusters) {
     },
   };
 
-  var localSearch = new BMap.LocalSearch(map, options);
+  const localSearch = new BMap.LocalSearch(map, options);
 
-  var drawingManager = new BMapLib.DrawingManager(map, {
+  const drawingManager = new BMapLib.DrawingManager(map, {
     isOpen: false, //是否开启绘制模式
     enableDrawingTool: true, //是否显示工具栏
     drawingToolOptions: {
@@ -43,13 +43,13 @@ export default function circleLocalSearch(map, nodes, updateClusters) {
       ]
     }
   });
-  var circle = null;
+  let circle = null;
   drawingManager.addEventListener('circlecomplete', function(e, overlay) {
     map.clearOverlays();
     circle = e;
     map.addOverlay(overlay);
-    var radius = parseInt(e.getRadius());
-    var center = e.getCenter();
+    const radius = parseInt(e.getRadius());
+    const center = e.getCenter();
     drawingManager.close();
     localSearch.searchNearby(' ', center, radius, {
       customData: {

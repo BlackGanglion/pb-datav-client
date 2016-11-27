@@ -13,6 +13,11 @@ const initialState = {
   hasAllNodesError: false,
   allNodesList: [],
   selectedKeys: ['map'],
+  loadingTip: '系统功能初始化中...',
+
+  // 站点底图
+  // scatter, cluster
+  allStaMethod: 'cluster',
 
   // K区域
   clusterCount: 3,
@@ -47,6 +52,15 @@ const CLOSE_MAP_LOADING = ACTION_PREFIX + 'CLOSE_MAP_LOADING';
 const closeLoading = () => {
   return {
     type: CLOSE_MAP_LOADING,
+  }
+}
+
+const OPEN_MAP_LOADING = ACTION_PREFIX + 'OPEN_MAP_LOADING';
+
+const openLoading = (tip) => {
+  return {
+    type: OPEN_MAP_LOADING,
+    payload: tip,
   }
 }
 
@@ -122,6 +136,23 @@ const updateSelectedHour = (hour) => {
   }
 }
 
+const CAL_CLUSTERS_DIS = ACTION_PREFIX + 'CAL_CLUSTERS_DIS';
+const CAL_CLUSTERS_DIS_SUCCESS = ACTION_PREFIX + 'CAL_CLUSTERS_DIS_SUCCESS';
+const CAL_CLUSTERS_DIS_FAILURE = ACTION_PREFIX + 'CAL_CLUSTERS_DIS_FAILURE';
+
+const calClustersDis = (clustersInfo) => {
+  return {
+    types: [CAL_CLUSTERS_DIS, CAL_CLUSTERS_DIS_SUCCESS, CAL_CLUSTERS_DIS_FAILURE],
+    url: getUrl('calCluster'),
+    method: 'POST',
+    headers: {
+      'Accept': 'application/json, text/plain',
+      'Content-Type': 'application/json, text/plain;charset=UTF-8',
+    },
+    body: JSON.stringify(clustersInfo),
+  }
+}
+
 const GET_NODE_LINK = ACTION_PREFIX + 'GET_NODE_LINK';
 const GET_NODE_LINK_SUCCESS = ACTION_PREFIX + 'GET_NODE_LINK_SUCCESS';
 const GET_NODE_LINK_FAILURE = ACTION_PREFIX + 'GET_NODE_LINK_FAILURE';
@@ -173,8 +204,18 @@ const selectedClusterFn = (cluster) => {
   }
 }
 
+const CHANGE_ALL_STA_METHOD = ACTION_PREFIX + 'CHANGE_ALL_STA_METHOD';
+
+const changeAllStaMethod = (title) => {
+  return {
+    type: CHANGE_ALL_STA_METHOD,
+    payload: title,
+  }
+}
+
 export const actions = {
   getAllNodesList,
+  openLoading,
   closeLoading,
   changeSelectKeys,
   changeClusterCount,
@@ -186,6 +227,8 @@ export const actions = {
   updateSelectedHour,
   getNodeLinkData,
   selectedClusterFn,
+  calClustersDis,
+  changeAllStaMethod,
 };
 
 function PortalReducer(state = initialState, action) {
@@ -213,6 +256,14 @@ function PortalReducer(state = initialState, action) {
         ...state,
         isLoadingAllNodes: false,
         hasAllNodesError: true,
+        loadingTip: 'allNodes接口出错, 请检查',
+      }
+    }
+    case OPEN_MAP_LOADING: {
+      return {
+        ...state,
+        isLoadingMap: true,
+        loadingTip: payload,
       }
     }
     case CLOSE_MAP_LOADING: {
@@ -312,6 +363,14 @@ function PortalReducer(state = initialState, action) {
         ...state,
         nodeLinkData: payload,
       };
+    }
+    case CHANGE_ALL_STA_METHOD: {
+      return {
+        ...state,
+        allStaMethod: payload,
+        isLoadingMap: true,
+        loadingTip: '模式切换中...',
+      }
     }
     default:
       return state;

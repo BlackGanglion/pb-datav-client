@@ -75,6 +75,12 @@
         }
       }
     }
+    .portal-control-map {
+      .ant-btn {
+        display: inline-block;
+        margin: 0px 4px;
+      }
+    }
   }
   .portal-info {
     background-color: $background-primary;

@@ -44,6 +44,7 @@
   "dependencies": {
     "antd": "^2.3.0",
     "d3": "^4.3.0",
+    "graham_scan": "^1.0.4",
     "lodash": "^4.16.6",
     "oui-dom-events": "^0.2.1",
     "raf": "^3.3.0",
