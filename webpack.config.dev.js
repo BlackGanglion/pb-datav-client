@@ -47,20 +47,8 @@ module.exports = {
       ],
       use: [
         'style-loader',
-        {
-          loader: 'css-loader',
-          options: {
-            sourceMap: true,
-          }
-        },
-        {
-          loader: 'sass-loader',
-          options: {
-            sourceMap: true,
-            sourceMapContents: true,
-            includePaths: [path.resolve(__dirname, './src/styles')]
-          }
-        },
+        'css-loader?sourceMap',
+        'sass-loader?sourceMap&sourceMapContents&includePaths[]=' + encodeURIComponent(path.resolve(__dirname, './src/styles'))
       ],
       // happy: { id: 'scss' },
     }]
