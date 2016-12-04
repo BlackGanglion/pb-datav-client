@@ -2,6 +2,20 @@ import _ from 'lodash';
 
 import { randomColor } from 'utils/utils';
 
+let storeOverlay = null;
+let localSearch = {
+  clearResults: () => {},
+}
+
+function clearCircle(map) {
+  if (storeOverlay) map.removeOverlay(storeOverlay);
+  if (localSearch) localSearch.clearResults();
+}
+
+export {
+  clearCircle,
+}
+
 export default function circleLocalSearch(map, nodes, updateClusters) {
   const options = {
     pageCapacity: 100,
@@ -29,7 +43,7 @@ export default function circleLocalSearch(map, nodes, updateClusters) {
     },
   };
 
-  const localSearch = new BMap.LocalSearch(map, options);
+  localSearch = new BMap.LocalSearch(map, options);
 
   const drawingManager = new BMapLib.DrawingManager(map, {
     isOpen: false, //是否开启绘制模式
@@ -43,11 +57,14 @@ export default function circleLocalSearch(map, nodes, updateClusters) {
       ]
     }
   });
-  let circle = null;
+
   drawingManager.addEventListener('circlecomplete', function(e, overlay) {
-    map.clearOverlays();
-    circle = e;
+    if (storeOverlay) map.removeOverlay(storeOverlay);
+
+    storeOverlay = overlay;
+
     map.addOverlay(overlay);
+
     const radius = parseInt(e.getRadius());
     const center = e.getCenter();
     drawingManager.close();

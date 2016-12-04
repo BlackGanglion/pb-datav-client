@@ -8,32 +8,43 @@ import AreaLineReducer from 'components/AreaLine/AreaLineRedux';
 const ACTION_PREFIX = 'portal/';
 
 const initialState = {
+  // 全局
   isLoadingMap: true,
   isLoadingAllNodes: true,
   hasAllNodesError: false,
   allNodesList: [],
   selectedKeys: ['map'],
   loadingTip: '系统功能初始化中...',
+  // 选择显示点信息(node)或者边信息(link)
+  kSelectedNode: null,
+  // 区域列表
+  clusters: [],
+  // 区域自增id
+  id: 0,
 
   // 站点底图
   // scatter, cluster
   allStaMethod: 'cluster',
+  isShowKResult: true,
 
-  // K区域
+  // K聚类
   clusterCount: 3,
   // loading, success
   clusterStatus: 'success',
   isClusterZoom: false,
-  kSelectedNode: null,
-  kAreaList: [],
-  clusters: [],
-  id: 0,
+  // K聚类结果
+  kAreaResult: [],
 
   // 力引导布局
+  tabModelKey: "1",
   selectedDate: '2014-03-23',
   selectedHour: '-1',
   selectedCluster: {},
+  selectedClusters: [],
   nodeLinkData: {},
+
+  // 飞线
+
 };
 
 const LOAD_ALLNODES_LIST = ACTION_PREFIX + 'LOAD_ALLNODES_LIST';
@@ -111,10 +122,34 @@ const kSelectedNodeFn = (nodeId) => {
 
 const UPDATE_CLUSTERS = ACTION_PREFIX + 'UPDATE_CLUSTERS';
 
+// 批量新增区域
 const updateClusters = (clusters) => {
   return {
     type: UPDATE_CLUSTERS,
     payload: clusters,
+  }
+}
+
+const UPDATE_CLUSTER = ACTION_PREFIX + 'UPDATE_CLUSTER';
+
+// 更新区域状态
+const updateCluster = (index, cluster) => {
+  return {
+    type: UPDATE_CLUSTER,
+    payload: {
+      cluster,
+      index,
+    }
+  }
+}
+
+const DELECT_CLUSTER = ACTION_PREFIX + 'DELECT_CLUSTER';
+
+// 删除区域状态
+const deleteCluster = (index) => {
+  return {
+    type: DELECT_CLUSTER,
+    payload: index,
   }
 }
 
@@ -169,7 +204,7 @@ const getNodeLinkData = (cluster, date, hour) => {
   /*
   http://localhost:8080/endWork/nodeConnect.json?
   nodeId=5509,5202,5199,5400,5399,8004,8033,5198,5203
-  &day=2014_04_16
+  &day=20140416
   &hour=16
   */
 
@@ -179,7 +214,7 @@ const getNodeLinkData = (cluster, date, hour) => {
       url: getUrl('nodeConnect'),
       params: {
         nodeId,
-        day: `${dateList[0]}_${dateList[1]}_${dateList[2]}`,
+        day: `${dateList[0]}${dateList[1]}${dateList[2]}`,
       }
     }
   }
@@ -189,7 +224,7 @@ const getNodeLinkData = (cluster, date, hour) => {
     url: getUrl('nodeConnect'),
     params: {
       nodeId,
-      day: `${dateList[0]}_${dateList[1]}_${dateList[2]}`,
+      day: `${dateList[0]}${dateList[1]}${dateList[2]}`,
       hour,
     }
   }
@@ -197,10 +232,10 @@ const getNodeLinkData = (cluster, date, hour) => {
 
 const SELECTED_CLUSTER_FN = ACTION_PREFIX + 'SELECTED_CLUSTER_FN';
 
-const selectedClusterFn = (cluster) => {
+const selectedClusterFn = (index) => {
   return {
     type: SELECTED_CLUSTER_FN,
-    payload: cluster,
+    payload: index,
   }
 }
 
@@ -210,6 +245,38 @@ const changeAllStaMethod = (title) => {
   return {
     type: CHANGE_ALL_STA_METHOD,
     payload: title,
+  }
+}
+
+const K_AREA_RESULT = ACTION_PREFIX + 'K_AREA_RESULT';
+const updateKAreaResult = (result) => {
+  return {
+    type: K_AREA_RESULT,
+    payload: result,
+  }
+}
+
+const CHANGE_IS_SHOW_RESULT = ACTION_PREFIX + 'CHANGE_IS_SHOW_RESULT';
+const changeIsShowKResult = (isShowKResult) => {
+  return {
+    type: CHANGE_IS_SHOW_RESULT,
+    payload: isShowKResult,
+  }
+}
+
+const CHANGE_FORCE_TAB = ACTION_PREFIX + 'CHANGE_FORCE_TAB';
+const changeForceTab = (key) => {
+  return {
+    type: CHANGE_FORCE_TAB,
+    payload: key,
+  }
+}
+
+const UPDATE_SELECT_LINK = ACTION_PREFIX + 'UPDATE_SELECT_LINK';
+const updateSelectedLink = (link) => {
+  return {
+    type: UPDATE_SELECT_LINK,
+    payload: link,
   }
 }
 
@@ -229,6 +296,12 @@ export const actions = {
   selectedClusterFn,
   calClustersDis,
   changeAllStaMethod,
+  updateKAreaResult,
+  changeIsShowKResult,
+  updateCluster,
+  deleteCluster,
+  changeForceTab,
+  updateSelectedLink,
 };
 
 function PortalReducer(state = initialState, action) {
@@ -308,6 +381,7 @@ function PortalReducer(state = initialState, action) {
     }
     /*
     格式 nodeList, id, selected, color
+    selectedHandler
     */
     case UPDATE_CLUSTERS: {
       const { id, clusters } = state;
@@ -321,6 +395,7 @@ function PortalReducer(state = initialState, action) {
               ...item,
               id: id + i,
               selected: false,
+              selectedHandler: null,
             }
           }),
         ],
@@ -340,22 +415,9 @@ function PortalReducer(state = initialState, action) {
       }
     }
     case SELECTED_CLUSTER_FN: {
-      const { id } = payload;
       return {
         ...state,
-        selectedCluster: payload,
-        clusters: state.clusters.map((cluster) => {
-          if (cluster.id === id) {
-            return {
-              ...cluster,
-              selected: true,
-            }
-          }
-          return {
-            ...cluster,
-            selected: false,
-          };
-        })
+        selectedCluster: state.clusters[payload],
       }
     }
     case GET_NODE_LINK_SUCCESS: {
@@ -370,6 +432,59 @@ function PortalReducer(state = initialState, action) {
         allStaMethod: payload,
         isLoadingMap: true,
         loadingTip: '模式切换中...',
+        // isShowKResult: false,
+      }
+    }
+    case K_AREA_RESULT: {
+      return {
+        ...state,
+        kAreaResult: payload,
+        isShowKResult: true,
+      }
+    }
+    case CHANGE_IS_SHOW_RESULT: {
+      return {
+        ...state,
+        isShowKResult: payload,
+      }
+    }
+    case UPDATE_CLUSTER: {
+      const { index, cluster } = payload;
+
+      return {
+        ...state,
+        clusters: state.clusters.map((item, i) => {
+          if (i === index) {
+            return cluster;
+          }
+          return item;
+        })
+      }
+    }
+    case DELECT_CLUSTER: {
+      const newClusters = [];
+
+      state.clusters.forEach((cluster, i) => {
+        if (i !== payload) {
+          newClusters.push(cluster);
+        }
+      });
+
+      return {
+        ...state,
+        clusters: newClusters,
+      }
+    }
+    case CHANGE_FORCE_TAB: {
+      return {
+        ...state,
+        tabModelKey: payload,
+      }
+    }
+    case UPDATE_SELECT_LINK: {
+      return {
+        ...state,
+        kSelectedNode: payload,
       }
     }
     default:

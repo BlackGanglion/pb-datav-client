@@ -58,8 +58,16 @@ export default class ForceChartSVG extends PureComponent {
           stroke={'red'}
           strokeWidth={1 + value / 4}
           key={`line-${i}`}
+          style={{
+            cursor: "pointer",
+            opacity: value / 50
+          }}
           onClick={() => {
-            console.log(link);
+            this.props.updateSelectedLink(link);
+            this.props.changeMapLink({
+              sourceNode,
+              targetNode,
+            })
           }}
         >
           <animate

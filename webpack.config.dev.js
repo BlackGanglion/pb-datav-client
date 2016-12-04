@@ -3,6 +3,9 @@ var fs = require('fs');
 var webpack = require('webpack');
 // var HappyPack = require('happypack');
 
+var sassLoader = 'style-loader!css-loader?sourceMap!sass-loader?sourceMap&sourceMapContents&includePaths[]='
+  + encodeURIComponent(path.resolve(__dirname, './src/styles'));
+
 module.exports = {
   profile: true,
   devtool: 'inline-source-map',
@@ -50,10 +53,10 @@ module.exports = {
         'css-loader?sourceMap',
         'sass-loader?sourceMap&sourceMapContents&includePaths[]=' + encodeURIComponent(path.resolve(__dirname, './src/styles'))
       ],
+      // use: sassLoader,
       // happy: { id: 'scss' },
     }]
   },
-
   resolve: {
     alias: {
       'react': path.resolve(__dirname, './node_modules', 'react'),

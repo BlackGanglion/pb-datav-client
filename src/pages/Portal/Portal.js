@@ -7,8 +7,10 @@ import moment from 'moment';
 
 import { Menu, Icon, Spin, Input,
   Button, Progress, Modal, DatePicker, Select,
-  message } from 'antd';
+  message, Tabs } from 'antd';
 const Option = Select.Option;
+const TabPane = Tabs.TabPane;
+const confirm = Modal.confirm;
 
 import './Portal.scss';
 
@@ -17,10 +19,12 @@ const DEFAULT_Y = 30.2428426084585;
 
 import markersCluster from 'components/BaiduMap/MarkersCluster';
 import pointsCluster from 'components/BaiduMap/PointsCluster';
-import circleLocalSearch from 'components/BaiduMap/Circle';
+import circleLocalSearch, { clearCircle } from 'components/BaiduMap/Circle';
+import convexHull, { clearAreaPolygon } from 'components/BaiduMap/ConvexHull'
 import Kcluster from 'components/Kcluster/Kcluster';
 import ForceChart from 'components/ForceChart/ForceChart';
 import AreaLine from 'components/AreaLine/AreaLine';
+import { showArea, clearArea, showLink } from 'components/BaiduMap/AreaShow';
 
 @connect((state, ownProps) => {
   return {
@@ -64,6 +68,8 @@ class Portal extends Component {
     selectedClusterFn: PropTypes.func,
     calClustersDis: PropTypes.func,
     changeAllStaMethod: PropTypes.func,
+    updateCluster: PropTypes.func,
+    deleteCluster: PropTypes.func,
   };
 
   constructor(props) {
@@ -72,6 +78,12 @@ class Portal extends Component {
     this.state = {
       height: document.documentElement.clientHeight,
       percent: 0,
+      // 是否显示面板
+      isShowPanel: true,
+      // id
+      cluster: null,
+      // id列表
+      // clusters: 0,
     };
   }
 
@@ -121,18 +133,24 @@ class Portal extends Component {
     this.map = null;
     this.pointCollection = null;
     this.markersCluster = null;
+    this.areaPolygon = null;
   }
 
   reInitMap(props) {
     const { allNodesList, allStaMethod, kSelectedNodeFn } = props;
     if (allStaMethod === 'scatter' && this.map) {
-      this.markersCluster.clearMarkers();
+      if (this.markersCluster) this.markersCluster.clearMarkers();
       this.pointCollection = pointsCluster(this.map, allNodesList, kSelectedNodeFn);
     }
 
     if (allStaMethod === 'cluster' && this.map) {
-      this.pointCollection.clear();
+      if (this.pointCollection) this.pointCollection.clear();
       this.markersCluster = markersCluster(this.map, allNodesList, kSelectedNodeFn);
+    }
+
+    if (allStaMethod === 'noMethod' && this.map) {
+      if (this.markersCluster) this.markersCluster.clearMarkers();
+      if (this.pointCollection) this.pointCollection.clear();
     }
   }
 
@@ -160,6 +178,30 @@ class Portal extends Component {
   renderPortalInfo() {
     const { selectedKeys, kSelectedNode } = this.props;
     if (_.isEmpty(kSelectedNode)) return null;
+
+    if (_.isObject(kSelectedNode) && kSelectedNode.relations) {
+      const { relations, source, target, value } = kSelectedNode;
+
+      relations.sort((a, b) => {
+        return Number(a.hour) - Number(b.hour);
+      });
+
+      const relationItems = relations.map((relation, i) => {
+        const { hour, source, target, value } = relation;
+        return <div key={i}>{`${hour}时 ${source}->${target} 流量:${value}`}</div>
+      });
+
+      return (
+        <div className="link-info">
+          <div>
+            <strong>{`${source} 与 ${target} 间`}</strong>(<span>{` 车流量( ${value} )`}</span>)
+          </div>
+          <div>
+            {relationItems}
+          </div>
+        </div>
+      );
+    }
 
     const { id, x, y, name, rx, ry, address, servicetime } = kSelectedNode;
 
@@ -199,6 +241,7 @@ class Portal extends Component {
     setTimeout(this.changePercent.bind(this, delay), 100);
   }
 
+  /*
   handleClusterInfo(index) {
     const cluster = this.props.clusters[index].nodeList;
 
@@ -215,32 +258,76 @@ class Portal extends Component {
       onOk() {},
     });
   }
+  */
+
+  handleShowCluster(index) {
+    // 将区域映射到地图上
+    const { clusters, kSelectedNodeFn } = this.props;
+    const cluster = clusters[index];
+
+    this.props.updateCluster(index, {
+      ...cluster,
+      selected: true,
+      selectedHandler: showArea(this.map, cluster, kSelectedNodeFn),
+    });
+  }
+
+  handleNoShowCluster(index) {
+    const { clusters } = this.props;
+    const cluster = clusters[index];
+
+    clearArea(this.map, cluster.selectedHandler);
+
+    this.props.updateCluster(index, {
+      ...cluster,
+      selected: false,
+      selectedHandler: null,
+    });
+  }
 
   renderPortalCluster() {
     const { clusters, selectedKeys, selectedClusterFn } = this.props;
 
-    // 生成区域还是选择区域
-    const isSelectCluster = selectedKeys[0] === 'force' || selectedKeys[0] === 'areaLine'
-      ? true : false;
-
     if (clusters && clusters.length > 0) {
       return clusters.map((cluster, i) => {
-        const { color, nodeList, id, selected } = cluster;
+        const { color, nodeList, id, selected, selectedHandler } = cluster;
 
         return (
           <Button
             className="portal-cluster-item"
             style={{
               backgroundColor: color,
-              opacity: !selected && isSelectCluster ? 0.4 : 1,
+              opacity: !selected ? 0.4 : 1,
             }}
             key={i}
             onClick={
-              isSelectCluster ?
-                () => { !selected && selectedClusterFn(cluster); } :
-                this.handleClusterInfo.bind(this, i)
+              () => {
+                if (selected) {
+                  this.handleNoShowCluster(i);
+                } else {
+                  this.handleShowCluster(i);
+                }
+              }
             }
           >
+            <i className="icon icon-delete"
+              onClick={(e) => {
+                e.stopPropagation();
+
+                const self = this;
+                confirm({
+                  title: '提醒',
+                  content: '是否删除当前区域?',
+                  onOk() {
+                    if(selectedHandler) {
+                      clearArea(self.map, cluster.selectedHandler);
+                    }
+
+                    self.props.deleteCluster(i);
+                  },
+                  onCancel() {},
+                });
+              }}></i>
             {`区域${id} (${nodeList.length})`}
           </Button>
         );
@@ -252,30 +339,75 @@ class Portal extends Component {
 
   renderPortalControl() {
     const { selectedKeys, clusterCount, clusterStatus,
-      selectedDate, selectedHour, allStaMethod } = this.props;
+      selectedDate, selectedHour, allStaMethod,
+      isShowKResult, kAreaResult,
+      tabModelKey, clusters } = this.props;
     if (selectedKeys[0] === 'map') {
       return (
         <div className="portal-control-map">
-          <Button
-            type="primary"
-            disabled={allStaMethod === 'scatter'}
-            onClick={() => {
-              this.props.changeAllStaMethod('scatter');
-              setTimeout(() => {
-                this.props.closeLoading();
-              }, 0);
-            }}
-          >散点模式</Button>
-          <Button
-            type="primary"
-            disabled={allStaMethod === 'cluster'}
-            onClick={() => {
-              this.props.changeAllStaMethod('cluster');
-              setTimeout(() => {
-                this.props.closeLoading();
-              }, 0);
-            }}
-          >聚类模式</Button>
+          <div className="portal-control-map-item">
+            <Button
+              type="primary"
+              disabled={allStaMethod === 'scatter'}
+              onClick={() => {
+                this.props.changeAllStaMethod('scatter');
+                setTimeout(() => {
+                  this.props.closeLoading();
+                }, 0);
+              }}
+            >散点模式</Button>
+          </div>
+          <div className="portal-control-map-item">
+            <Button
+              type="primary"
+              disabled={allStaMethod === 'cluster'}
+              onClick={() => {
+                this.props.changeAllStaMethod('cluster');
+                setTimeout(() => {
+                  this.props.closeLoading();
+                }, 0);
+              }}
+            >聚类模式</Button>
+          </div>
+          <div className="portal-control-map-item">
+            <Button
+              type="primary"
+              disabled={allStaMethod === 'noMethod'}
+              onClick={() => {
+                this.props.changeAllStaMethod('noMethod');
+                setTimeout(() => {
+                  this.props.closeLoading();
+                }, 0);
+              }}
+            >无模式</Button>
+          </div>
+          <div className="portal-control-map-item">
+            {kAreaResult && kAreaResult.length ? <Button
+              type="primary"
+              onClick={() => {
+                if (isShowKResult) {
+                  clearAreaPolygon(this.map, this.areaPolygon);
+                  this.areaPolygon = null;
+                  return this.props.changeIsShowKResult(false);
+                }
+                this.areaPolygon = convexHull(
+                  this.map,
+                  this.areaPolygon,
+                  kAreaResult,
+                  this.props.updateClusters,
+                );
+                return this.props.changeIsShowKResult(true);
+              }}
+            >{!isShowKResult ? '显示K-means划分结果' : '隐藏K-means划分结果'}</Button> : null}
+          </div>
+          <div className="portal-control-map-item">
+            <Button
+              type="primary"
+              onClick={() => {
+                clearCircle(this.map);
+              }}
+            >清除当前圈画</Button>
+          </div>
         </div>
       );
     }
@@ -298,7 +430,7 @@ class Portal extends Component {
               this.props.changeClusterStatus('loading');
             }}
           >
-            {clusterStatus === 'loading' ? '区域中...' : '开始区域'}
+            {clusterStatus === 'loading' ? '聚类中...' : '开始聚类'}
           </Button>
           <Button
             type="primary"
@@ -323,28 +455,87 @@ class Portal extends Component {
           );
         }
       }
+
+      const selectedOptions = [];
+
+      clusters.forEach((cluster, i) => {
+        const { selected, id } = cluster;
+        if (selected) {
+          selectedOptions.push(
+            <Option value={String(i)} key={i}>{`区域${id}`}</Option>
+          );
+        }
+      });
+
       return (
         <div className="portal-control-force">
-          <div>
-            <span>日期:</span>
-            <DatePicker
-              allowClear={false}
-              value={moment(selectedDate, 'YYYY-MM-DD')}
-              onChange={(date, dateString) => { this.props.updateSelectedDate(dateString); }}
-            />
+          <Tabs defaultActiveKey={tabModelKey} onChange={(key) => {
+            this.props.changeForceTab(key);
+          }}>
+            <TabPane tab="区域内关系" key="1">
+              <div>
+                <Select
+                  multiple={tabModelKey === "2"}
+                  showSearch={tabModelKey === "1"}
+                  style={{ width: '140px' }}
+                  placeholder="带有搜索功能, 可直接搜索"
+                  optionFilterProp="children"
+                  onChange={(value) => {
+                    if (tabModelKey === "1") {
+                      this.setState({
+                        cluster: Number(value),
+                      });
+                    }
+                    if (tabModelKey === "2") {
 
-          </div>
-          <div className="force-date-tip">时间范围是 2014.03.01 - 2014.06.23</div>
-          <div>
-            <span>小时:</span>
-            <Select
-              value={selectedHour}
-              style={{ width: 160 }}
-              onChange={(value) => { this.props.updateSelectedHour(value); }}
-            >
-              {options}
-            </Select>
-          </div>
+                    }
+                  }}
+                  notFoundContent="不存在该区域"
+                >
+                  {selectedOptions}
+                </Select>
+                <Button
+                  style={{
+                    display: 'inline-block',
+                    marginLeft: '4px',
+                  }}
+                  type="primary"
+                  onClick={() => {
+                    if (tabModelKey === "1" && this.state.cluster !== null) {
+                      this.props.selectedClusterFn(this.state.cluster);
+                    }
+                    if (tabModelKey === "2") {
+
+                    }
+                  }}
+                >确定</Button>
+              </div>
+              <div>
+                <span>日期:</span>
+                <DatePicker
+                  allowClear={false}
+                  value={moment(selectedDate, 'YYYY-MM-DD')}
+                  onChange={(date, dateString) => { this.props.updateSelectedDate(dateString); }}
+                />
+              </div>
+              <div className="force-date-tip">时间范围是 2014.03.01 - 2014.06.23</div>
+              <div>
+                <span>小时:</span>
+                <Select
+                  value={selectedHour}
+                  style={{ width: 160 }}
+                  onChange={(value) => { this.props.updateSelectedHour(value); }}
+                >
+                  {options}
+                </Select>
+              </div>
+
+            </TabPane>
+            <TabPane tab="区域间关系" key="2">
+              <span>直接</span>
+              <span>区域选择</span>
+            </TabPane>
+          </Tabs>
         </div>
       );
     }
@@ -352,8 +543,21 @@ class Portal extends Component {
     return null;
   }
 
+  handleUpdateConvexHull(clusters) {
+    this.areaPolygon = convexHull(
+      this.map,
+      this.areaPolygon,
+      clusters,
+      this.props.updateClusters,
+    );
+  }
+
+  changeMapLink({ sourceNode, targetNode }) {
+    showLink(this.map, sourceNode, targetNode);
+  }
+
   render() {
-    const { height } = this.state;
+    const { height, isShowPanel } = this.state;
 
     const { selectedKeys, isLoadingAllNodes, isLoadingMap,
       clusterCount, allNodesList, clusterStatus, isClusterZoom,
@@ -403,6 +607,15 @@ class Portal extends Component {
             <div className="portal-cluster">
               {this.renderPortalCluster()}
             </div>
+            <Button
+              type="primary"
+              onClick={() => {
+                this.setState({
+                  isShowPanel: !isShowPanel,
+                })
+              }}
+              className="portal-main-list-control"
+            >{isShowPanel ? '隐藏面板' : '显示面板'}</Button>
             <Kcluster
               data={allNodesList}
               count={clusterCount}
@@ -415,7 +628,9 @@ class Portal extends Component {
               updateClusters={this.props.updateClusters}
               calClustersDis={this.props.calClustersDis}
               setProgress={this.setProgress.bind(this)}
-              isRender={selectedKeys[0] === 'kCluster'}
+              isRender={selectedKeys[0] === 'kCluster' && isShowPanel}
+              updateConvexHull={::this.handleUpdateConvexHull}
+              updateKAreaResult={this.props.updateKAreaResult}
             >
              <Progress
                type="circle"
@@ -429,15 +644,17 @@ class Portal extends Component {
               hour={selectedHour}
               cluster={selectedCluster}
               requestData={this.props.getNodeLinkData}
-              isRender={selectedKeys[0] === 'force'}
+              isRender={selectedKeys[0] === 'force' && isShowPanel}
               kSelectedNodeFn={this.props.kSelectedNodeFn}
               updateClusters={this.props.updateClusters}
+              updateSelectedLink={this.props.updateSelectedLink}
+              changeMapLink={::this.changeMapLink}
             />
             <AreaLine
               width={800}
               height={600}
               cluster={selectedCluster}
-              isRender={selectedKeys[0] === 'areaLine'}
+              isRender={selectedKeys[0] === 'areaLine' && isShowPanel}
             />
           </div>
         </div>

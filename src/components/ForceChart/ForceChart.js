@@ -33,6 +33,8 @@ class ForceChart extends PureComponent {
     requestData: PropTypes.func,
     updateForceChartConfig: PropTypes.func,
     updateClusters: PropTypes.func,
+    updateSelectedLink: PropTypes.func,
+    changeMapLink: PropTypes.func,
   }
 
   constructor(props) {
@@ -41,6 +43,8 @@ class ForceChart extends PureComponent {
     this.state = {
       svgKey: Math.random(),
       isConfigOpen: false,
+      // 渲染面板显示/隐藏
+      // renderAreaOpen: true,
 
       config: {
         count: props.count,
@@ -80,10 +84,12 @@ class ForceChart extends PureComponent {
     if (!this.props.isRender
       && nextProps.isRender
       && !_.isEmpty(nextProps.data)) {
-      this.clubNodes = calculateForceChart(width, height, nextProps);
-      this.setState({
-        svgKey: Math.random(),
-      });
+      if (!_.isEqual(data, this.props.data)) {
+        this.clubNodes = calculateForceChart(width, height, nextProps);
+        this.setState({
+          svgKey: Math.random(),
+        });
+      }
     }
 
     if (nextProps.isRender && this.props.isRender) {
@@ -121,14 +127,17 @@ class ForceChart extends PureComponent {
   render() {
     const { data, cluster, date, hour, isRender,
       lastTime, kSelectedNodeFn, clubNodes,
-      allNodesList, updateClusters } = this.props;
+      allNodesList, updateClusters, updateSelectedLink,
+      changeMapLink } = this.props;
+
+    const { renderAreaOpen } = this.state;
 
     let tip = '';
     if (_.isEmpty(data)) {
       tip = '计算中...';
     }
     if (_.isEmpty(cluster)) {
-      tip = '请选择上方区域';
+      tip = '请点亮上方区域，再从左侧列表选取';
     }
     if (_.isEmpty(date)) {
       tip = '请选择左侧日期';
@@ -150,7 +159,9 @@ class ForceChart extends PureComponent {
     return (
       <div
         className="force-chart"
-        style={{ display: isRender ? 'block' : 'none' }}
+        style={{
+          display: isRender ? 'block' : 'none'
+        }}
       >
         <ForceChartSVG
           data={data}
@@ -162,6 +173,8 @@ class ForceChart extends PureComponent {
           kSelectedNodeFn={kSelectedNodeFn}
           allNodesList={allNodesList}
           updateClusters={updateClusters}
+          updateSelectedLink={updateSelectedLink}
+          changeMapLink={changeMapLink}
         />
         {this.state.isConfigOpen ? (
           <div className="right-config-open">

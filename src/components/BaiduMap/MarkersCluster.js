@@ -1,5 +1,5 @@
 export default function(map, nodes, kSelectedNodeFn) {
-  map.clearOverlays();
+  // map.clearOverlays();
 
   const markers = [];
   nodes.forEach((e) => {

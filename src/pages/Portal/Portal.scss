@@ -16,6 +16,11 @@
     position: absolute;
     top: 10px;
     left: 360px;
+    .portal-main-list-control {
+      position: absolute;
+      top: 40px;
+      left: 800px;
+    }
     .portal-cluster {
       background-color: $background-primary;
       height: 60px;
@@ -37,6 +42,12 @@
         text-align: center;
         color: #fff;
         margin: 0 4px;
+        .icon {
+          position: absolute;
+          top: -12px;
+          right: -9px;
+          color: #d81e06;
+        }
       }
     }
   }
@@ -76,6 +87,9 @@
       }
     }
     .portal-control-map {
+      .portal-control-map-item {
+        margin: 4px;
+      }
       .ant-btn {
         display: inline-block;
         margin: 0px 4px;
@@ -84,9 +98,17 @@
   }
   .portal-info {
     background-color: $background-primary;
-    padding: 20px;
+    padding: 10px 20px;
     border-radius: 5px;
     margin-top: 10px;
+    .link-info {
+      max-height: 160px;
+      overflow: scroll;
+    }
+    .station-info {
+      max-height: 160px;
+      overflow: scroll;
+    }
   }
 }
 

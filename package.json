@@ -43,6 +43,8 @@
   },
   "dependencies": {
     "antd": "^2.3.0",
+    "convex-hull": "^1.0.3",
+    "convexhull-js": "^1.0.0",
     "d3": "^4.3.0",
     "graham_scan": "^1.0.4",
     "lodash": "^4.16.6",

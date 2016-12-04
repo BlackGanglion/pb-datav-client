@@ -15,8 +15,8 @@ const yPadding = 0;
 const xAxisHeight = 500;
 const xAxisWidth = 800;
 
-const edge = 15;
 const delayTime = 5;
+// const edge = 15;
 
 class Kcluster extends Component {
   static propTypes = {
@@ -33,6 +33,7 @@ class Kcluster extends Component {
     setProgress: PropTypes.func,
     isRender: PropTypes.bool,
     calClustersDis: PropTypes.func,
+    updateConvexHull: PropTypes.func,
   }
 
   constructor(props) {
@@ -118,6 +119,9 @@ class Kcluster extends Component {
 
     const { data, count: k } = this.props;
 
+    // 0 -> 20 100 -> 10
+    const edge = (-(0.1 * k) + 20) > 5 ? (-(0.1 * k) + 20) : 5;
+
     // 随机出K个点
     this.centroids = new Array();
     const indices = [];
@@ -175,6 +179,10 @@ class Kcluster extends Component {
   }
 
   changeCentroid(centroids, i) {
+    const { data, count: k } = this.props;
+
+    const edge = (-(0.1 * k) + 20) > 5 ? (-(0.1 * k) + 20) : 5;
+
     this.cluster.select(`.cluster${i}`)
       .transition()
       .duration(1000)
@@ -248,6 +256,10 @@ class Kcluster extends Component {
       return {
         nodeList: cluster,
         color: this.centroids[i].color,
+        centroid: {
+          x: this.centroids[i].x,
+          y: this.centroids[i].y,
+        },
       };
     });
   }
@@ -310,6 +322,7 @@ class Kcluster extends Component {
       this.handleZoom();
       const clusters = this.kmeans();
 
+      /*
       const nodeMap = [];
       for(let i = 0; i < clusters.length; i++) {
         const { nodeList } = clusters[i];
@@ -326,15 +339,22 @@ class Kcluster extends Component {
         count: clusters.length,
         nodeMap,
       }
+      */
 
       // 计算聚类与聚类之间的关系
-      this.props.calClustersDis(clustersInfo);
+      // this.props.calClustersDis(clustersInfo);
 
+      // 进度圈
       this.props.setProgress(this.delay);
+
+      // 更新K聚类结果
+      this.props.updateKAreaResult(clusters);
+
+      // 自动映射到底图
+      this.props.updateConvexHull(clusters);
 
       setTimeout(() => {
         this.props.changeStatus('success');
-        this.props.updateClusters(clusters);
       }, this.delay + 1000);
     }
   }
