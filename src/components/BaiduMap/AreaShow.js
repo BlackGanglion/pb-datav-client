@@ -4,6 +4,8 @@
 
 import ch from 'convexhull-js';
 
+import _ from 'lodash';
+
 let _link = null;
 let _label = null;
 
@@ -166,10 +168,40 @@ function clearLink(map) {
   }
 }
 
+function showAreaLink(map, relations, allNodesList) {
+  return relations.map((relation) => {
+    const { source, target, value } = relation;
+
+    const sourceItem = _.find(allNodesList, { id: Number(source) });
+    const targetitem = _.find(allNodesList, { id: Number(target) });
+
+    const pointA = new BMap.Point(sourceItem.x, sourceItem.y);
+    const pointB = new BMap.Point(targetitem.x, targetitem.y);
+
+    const polyline = new BMap.Polyline([pointA, pointB],
+      { strokeColor: "blue", strokeWeight: value / 2, strokeOpacity: 0.5 }
+    );
+
+    map.addOverlay(polyline);
+
+    return polyline;
+  });
+}
+
+function clearAreaLink(map, handler) {
+  if (handler && handler.length) {
+    handler.forEach((item) => {
+      map.removeOverlay(item);
+    })
+  }
+}
+
 export {
   showArea,
   clearArea,
   showLink,
   clearLink,
+  showAreaLink,
+  clearAreaLink,
 }
 

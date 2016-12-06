@@ -24,7 +24,7 @@ export default class ForceChartSVG extends PureComponent {
   }
 
   renderLink() {
-    const { data, lastTime, width, height } = this.props;
+    const { data, lastTime, width, height, tabModelKey } = this.props;
     const { nodes, links } = data;
 
     return links.map((link, i) => {
@@ -56,18 +56,24 @@ export default class ForceChartSVG extends PureComponent {
           x2={targetNode.ox + (width / 2)}
           y2={targetNode.oy + (height / 2)}
           stroke={'red'}
-          strokeWidth={1 + value / 4}
+          // 两种模式
+          strokeWidth={tabModelKey === "1" ? (1 + value / 4) : (1 + value / 500)}
           key={`line-${i}`}
           style={{
             cursor: "pointer",
-            opacity: value / 50
+            opacity: tabModelKey === "1" ? value / 50 : value / 500,
           }}
           onClick={() => {
-            this.props.updateSelectedLink(link);
-            this.props.changeMapLink({
-              sourceNode,
-              targetNode,
-            })
+            if(tabModelKey === "1") {
+              this.props.updateSelectedLink(link);
+              this.props.changeMapLink({
+                sourceNode,
+                targetNode,
+              })
+            }
+            if (tabModelKey === "2") {
+              this.props.kSelectedAreaLink(relations);
+            }
           }}
         >
           <animate
@@ -112,12 +118,12 @@ export default class ForceChartSVG extends PureComponent {
   }
 
   renderNodes(nodes, isClub = false) {
-    const { lastTime, width, height, allNodesList, updateClusters } = this.props;
+    const { lastTime, width, height, allNodesList, updateClusters, tabModelKey } = this.props;
 
     return nodes.map((node, i) => {
       const { ox, oy, cx, cy, r, id, group, path, queue, clubNodeNumber } = node;
 
-      let color = '#6e5398';
+      let color = node.color || '#6e5398';
       let textColor = 'black';
 
       if (isClub) {
@@ -156,24 +162,34 @@ export default class ForceChartSVG extends PureComponent {
             fill={color}
             key={`circle${i}`}
             onClick={isClub ? () => {
-              // 是否加入聚类
-              Modal.info({
-                title: '提示',
-                content: (
-                  <p>当前区域是否需要加入上方区域选择区</p>
-                ),
-                onOk() {
-                  const nodeList = queue.map((item, i) => {
-                    const id = Number(item);
-                    return _.find(allNodesList, { id });
-                  })
-                  updateClusters([{
-                    nodeList,
-                    color: randomColor(),
-                  }]);
-                },
-              });
-            } : this.handleNodeClick.bind(this, id)}
+              if (tabModelKey === "1") {
+                // 是否加入聚类
+                Modal.info({
+                  title: '提示',
+                  content: (
+                    <p>当前区域是否需要加入上方区域选择区</p>
+                  ),
+                  onOk() {
+                    const nodeList = queue.map((item, i) => {
+                      const id = Number(item);
+                      return _.find(allNodesList, { id });
+                    })
+                    updateClusters([{
+                      nodeList,
+                      color: randomColor(),
+                    }]);
+                  },
+                });
+              }
+            } : () => {
+              if (tabModelKey === "1") {
+                this.handleNodeClick(id);
+              }
+              if (tabModelKey === "2") {
+                // K聚类区域(index)，与普通聚类(_find id)有区别
+                this.props.kSelectedArea(id);
+              }
+            }}
             style={{
               cursor: "pointer",
               opacity: !isClub && this.state.clubNodesMap[clubNodeNumber] ? 0.4 : 1,
@@ -221,7 +237,7 @@ export default class ForceChartSVG extends PureComponent {
             y={oy + (height / 2) + 4}
             fill={textColor}
           >
-            {id}
+            {tabModelKey === "1" ? id : `区域${id || i}`}
             <animate
               attributeName="x"
               begin="0"
@@ -265,6 +281,7 @@ export default class ForceChartSVG extends PureComponent {
 
   render() {
     const { svgKey, width, height, data } = this.props;
+
     return (
       <svg
         key={svgKey}

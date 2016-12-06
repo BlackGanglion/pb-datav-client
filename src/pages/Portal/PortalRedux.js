@@ -41,7 +41,11 @@ const initialState = {
   selectedHour: '-1',
   selectedCluster: {},
   selectedClusters: [],
+  // 共用
   nodeLinkData: {},
+  researchClusters: [],
+  // 区域间研究模式, k为K-means，p为上方高亮区域
+  researchModel: null
 
   // 飞线
 
@@ -175,7 +179,26 @@ const CAL_CLUSTERS_DIS = ACTION_PREFIX + 'CAL_CLUSTERS_DIS';
 const CAL_CLUSTERS_DIS_SUCCESS = ACTION_PREFIX + 'CAL_CLUSTERS_DIS_SUCCESS';
 const CAL_CLUSTERS_DIS_FAILURE = ACTION_PREFIX + 'CAL_CLUSTERS_DIS_FAILURE';
 
-const calClustersDis = (clustersInfo) => {
+const calClustersDis = (clustersInfo, colorList, date, hour) => {
+  const dateList = date.split('-');
+
+  if (hour === "-1") {
+    return {
+      types: [CAL_CLUSTERS_DIS, CAL_CLUSTERS_DIS_SUCCESS, CAL_CLUSTERS_DIS_FAILURE],
+      url: getUrl('calCluster'),
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json, text/plain',
+        'Content-Type': 'application/json, text/plain;charset=UTF-8',
+      },
+      body: JSON.stringify({
+        ...clustersInfo,
+        colorList,
+        day: `${dateList[0]}${dateList[1]}${dateList[2]}`,
+      }),
+    }
+  }
+
   return {
     types: [CAL_CLUSTERS_DIS, CAL_CLUSTERS_DIS_SUCCESS, CAL_CLUSTERS_DIS_FAILURE],
     url: getUrl('calCluster'),
@@ -184,7 +207,12 @@ const calClustersDis = (clustersInfo) => {
       'Accept': 'application/json, text/plain',
       'Content-Type': 'application/json, text/plain;charset=UTF-8',
     },
-    body: JSON.stringify(clustersInfo),
+    body: JSON.stringify({
+      ...clustersInfo,
+      colorList,
+      day: `${dateList[0]}${dateList[1]}${dateList[2]}`,
+      hour,
+    }),
   }
 }
 
@@ -280,6 +308,18 @@ const updateSelectedLink = (link) => {
   }
 }
 
+const RESEARCH_CLUSTERS = ACTION_PREFIX + 'RESEARCH_CLUSTERS';
+
+const getResearchClusters = (researchClusters, researchModel) => {
+  return {
+    type: RESEARCH_CLUSTERS,
+    payload: {
+      researchClusters,
+      researchModel,
+    },
+  }
+}
+
 export const actions = {
   getAllNodesList,
   openLoading,
@@ -302,6 +342,7 @@ export const actions = {
   deleteCluster,
   changeForceTab,
   updateSelectedLink,
+  getResearchClusters,
 };
 
 function PortalReducer(state = initialState, action) {
@@ -420,6 +461,12 @@ function PortalReducer(state = initialState, action) {
         selectedCluster: state.clusters[payload],
       }
     }
+    case GET_NODE_LINK: {
+      return {
+        ...state,
+        nodeLinkData: [],
+      }
+    }
     case GET_NODE_LINK_SUCCESS: {
       return {
         ...state,
@@ -479,12 +526,35 @@ function PortalReducer(state = initialState, action) {
       return {
         ...state,
         tabModelKey: payload,
+        selectedCluster: {},
+        researchClusters: [],
+        nodeLinkData: {},
       }
     }
     case UPDATE_SELECT_LINK: {
       return {
         ...state,
         kSelectedNode: payload,
+      }
+    }
+    case RESEARCH_CLUSTERS: {
+      const { researchModel, researchClusters } = payload;
+      return {
+        ...state,
+        researchClusters,
+        researchModel,
+      }
+    }
+    case CAL_CLUSTERS_DIS_SUCCESS: {
+      return {
+        ...state,
+        nodeLinkData: payload,
+      }
+    }
+    case CAL_CLUSTERS_DIS: {
+      return {
+        ...state,
+        nodeLinkData: {},
       }
     }
     default:

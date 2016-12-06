@@ -25,10 +25,10 @@ const height = 595;
 })
 class ForceChart extends PureComponent {
   static propTypes = {
+    tabModelKey: PropTypes.string,
     data: PropTypes.object,
     date: PropTypes.string,
     hour: PropTypes.string,
-    cluster: PropTypes.object,
     isRender: PropTypes.bool,
     requestData: PropTypes.func,
     updateForceChartConfig: PropTypes.func,
@@ -78,7 +78,7 @@ class ForceChart extends PureComponent {
   }
 
   componentWillReceiveProps(nextProps) {
-    const { data, date, hour, cluster } = nextProps;
+    const { data, date, hour, cluster, tabModelKey } = nextProps;
 
     // 渲染卡片，如果数据不为空，更新图
     if (!this.props.isRender
@@ -94,7 +94,7 @@ class ForceChart extends PureComponent {
 
     if (nextProps.isRender && this.props.isRender) {
       // 更新数据或配置时，更新图
-      if (!_.isEqual(data, this.props.data)
+      if ((!_.isEqual(data, this.props.data) && !_.isEmpty(data))
         || this.checkConfigProps(nextProps, this.props)) {
         this.clubNodes = calculateForceChart(width, height, nextProps);
         this.setState({
@@ -107,7 +107,37 @@ class ForceChart extends PureComponent {
         || !_.isEqual(hour, this.props.hour)
         || !_.isEqual(cluster, this.props.cluster)) {
         if (!_.isEmpty(cluster) && !_.isEmpty(date) && !_.isEmpty(hour)) {
-          this.props.requestData(cluster, date, hour, width, height);
+          if (tabModelKey === "1") {
+            this.props.requestData(cluster, date, hour, width, height);
+          } else {
+            // 数据处理一下
+
+            console.log(cluster);
+
+            const nodeMap = [];
+            const clusters = cluster;
+            const colorList = [];
+            for(let i = 0; i < clusters.length; i++) {
+              const { nodeList, id: cid, color } = clusters[i];
+              colorList.push(color);
+
+              for(let j = 0; j < nodeList.length; j++) {
+                const { id } = nodeList[j];
+                nodeMap.push({
+                  id,
+                  // K聚类没有id编号，上方聚类区有相应编号
+                  clusterId: cid || i,
+                });
+              }
+            }
+
+            const clustersInfo = {
+              count: clusters.length,
+              nodeMap,
+            }
+
+            this.props.requestData(clustersInfo, colorList, date, hour);
+          }
         }
       }
     }
@@ -128,7 +158,7 @@ class ForceChart extends PureComponent {
     const { data, cluster, date, hour, isRender,
       lastTime, kSelectedNodeFn, clubNodes,
       allNodesList, updateClusters, updateSelectedLink,
-      changeMapLink } = this.props;
+      changeMapLink, tabModelKey, kSelectedArea, kSelectedAreaLink } = this.props;
 
     const { renderAreaOpen } = this.state;
 
@@ -136,14 +166,14 @@ class ForceChart extends PureComponent {
     if (_.isEmpty(data)) {
       tip = '计算中...';
     }
-    if (_.isEmpty(cluster)) {
-      tip = '请点亮上方区域，再从左侧列表选取';
-    }
     if (_.isEmpty(date)) {
       tip = '请选择左侧日期';
     }
     if (_.isEmpty(hour)) {
       tip = '请选择左侧小时';
+    }
+    if (_.isEmpty(cluster)) {
+      tip = (tabModelKey === "1" ? '请从左侧列表选取区域，与上方区域有对应关系' : '请从左侧两种方式中选择');
     }
 
     if (_.isEmpty(cluster) || _.isEmpty(date) || _.isEmpty(hour) || _.isEmpty(data)) {
@@ -164,6 +194,7 @@ class ForceChart extends PureComponent {
         }}
       >
         <ForceChartSVG
+          tabModelKey={tabModelKey}
           data={data}
           width={width}
           height={height}
@@ -175,6 +206,8 @@ class ForceChart extends PureComponent {
           updateClusters={updateClusters}
           updateSelectedLink={updateSelectedLink}
           changeMapLink={changeMapLink}
+          kSelectedArea={kSelectedArea}
+          kSelectedAreaLink={kSelectedAreaLink}
         />
         {this.state.isConfigOpen ? (
           <div className="right-config-open">

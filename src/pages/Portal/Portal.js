@@ -24,7 +24,7 @@ import convexHull, { clearAreaPolygon } from 'components/BaiduMap/ConvexHull'
 import Kcluster from 'components/Kcluster/Kcluster';
 import ForceChart from 'components/ForceChart/ForceChart';
 import AreaLine from 'components/AreaLine/AreaLine';
-import { showArea, clearArea, showLink } from 'components/BaiduMap/AreaShow';
+import { showArea, clearArea, showLink, showAreaLink, clearAreaLink } from 'components/BaiduMap/AreaShow';
 
 @connect((state, ownProps) => {
   return {
@@ -82,8 +82,6 @@ class Portal extends Component {
       isShowPanel: true,
       // id
       cluster: null,
-      // id列表
-      // clusters: 0,
     };
   }
 
@@ -133,7 +131,11 @@ class Portal extends Component {
     this.map = null;
     this.pointCollection = null;
     this.markersCluster = null;
+    // K-means显示
     this.areaPolygon = null;
+    // 区域间研究时区域显示
+    this.researchArea = null;
+    this.researchAreaLink = null;
   }
 
   reInitMap(props) {
@@ -460,11 +462,9 @@ class Portal extends Component {
 
       clusters.forEach((cluster, i) => {
         const { selected, id } = cluster;
-        if (selected) {
-          selectedOptions.push(
-            <Option value={String(i)} key={i}>{`区域${id}`}</Option>
-          );
-        }
+        selectedOptions.push(
+          <Option value={String(i)} key={i}>{`区域${id}`}</Option>
+        );
       });
 
       return (
@@ -475,20 +475,14 @@ class Portal extends Component {
             <TabPane tab="区域内关系" key="1">
               <div>
                 <Select
-                  multiple={tabModelKey === "2"}
-                  showSearch={tabModelKey === "1"}
+                  showSearch
                   style={{ width: '140px' }}
                   placeholder="带有搜索功能, 可直接搜索"
                   optionFilterProp="children"
                   onChange={(value) => {
-                    if (tabModelKey === "1") {
-                      this.setState({
-                        cluster: Number(value),
-                      });
-                    }
-                    if (tabModelKey === "2") {
-
-                    }
+                    this.setState({
+                      cluster: Number(value),
+                    });
                   }}
                   notFoundContent="不存在该区域"
                 >
@@ -501,11 +495,13 @@ class Portal extends Component {
                   }}
                   type="primary"
                   onClick={() => {
+                    this.setState({
+                      isShowPanel: true,
+                    })
                     if (tabModelKey === "1" && this.state.cluster !== null) {
-                      this.props.selectedClusterFn(this.state.cluster);
-                    }
-                    if (tabModelKey === "2") {
-
+                      setTimeout(() => {
+                        this.props.selectedClusterFn(this.state.cluster);
+                      }, 0);
                     }
                   }}
                 >确定</Button>
@@ -529,11 +525,123 @@ class Portal extends Component {
                   {options}
                 </Select>
               </div>
-
             </TabPane>
             <TabPane tab="区域间关系" key="2">
-              <span>直接</span>
-              <span>区域选择</span>
+              <div>
+                <Button
+                  style={{
+                    display: 'inline-block',
+                    marginLeft: '4px',
+                  }}
+                  type="primary"
+                  size="small"
+                  onClick={() => {
+                    // 未执行K-means提醒
+
+                    if(kAreaResult && kAreaResult.length > 2) {
+                      this.setState({
+                        isShowPanel: true,
+                      })
+
+                      setTimeout(() => {
+                        this.props.getResearchClusters(kAreaResult, 'k');
+                      }, 0);
+                      return;
+                    }
+
+                    Modal.error({
+                      title: '提醒',
+                      content: '当前K-means聚类未执行或无效',
+                    });
+                  }}
+                >所有K聚类区域</Button>
+                <Button
+                  style={{
+                    display: 'inline-block',
+                    marginLeft: '4px',
+                  }}
+                  type="primary"
+                  size="small"
+                  onClick={() => {
+                    // 未点亮2个以上区域提醒，
+                    const nodeMap = {};
+                    const selectedClusters = [];
+                    let isCoincide = false;
+                    clusters.forEach((cluster) => {
+                      const { color, nodeList, id, selected } = cluster;
+
+                      if (selected && !isCoincide) {
+                        nodeList.forEach((node) => {
+                          const { id } = node;
+
+                          if (nodeMap[id]) {
+                            isCoincide = true;
+                          } else {
+                            nodeMap[id] = true;
+                          }
+                        });
+
+                        if (!isCoincide) {
+                          selectedClusters.push(cluster);
+                        }
+                      }
+                    });
+
+                    if (isCoincide) {
+                      Modal.error({
+                        title: '提醒',
+                        content: '当前区域间有站点重叠',
+                      });
+                      return;
+                    }
+
+                    if (selectedClusters.length < 2) {
+                      Modal.error({
+                        title: '提醒',
+                        content: '当前区域点亮数不足两个',
+                      });
+                      return;
+                    }
+
+                    this.setState({
+                      isShowPanel: true,
+                    });
+                    setTimeout(() => {
+                      this.props.getResearchClusters(selectedClusters, 'p');
+                    }, 0);
+                  }}
+                >上方点亮区域</Button>
+                <Button
+                  style={{
+                    display: 'inline-block',
+                    marginLeft: '4px',
+                  }}
+                  onClick={() => {
+                    this.clearKSelectedArea();
+                  }}
+                  size="small"
+                  type="primary"
+                >清除</Button>
+              </div>
+              <div>
+                <span>日期:</span>
+                <DatePicker
+                  allowClear={false}
+                  value={moment(selectedDate, 'YYYY-MM-DD')}
+                  onChange={(date, dateString) => { this.props.updateSelectedDate(dateString); }}
+                />
+              </div>
+              <div className="force-date-tip">时间范围是 2014.03.01 - 2014.06.23</div>
+              <div>
+                <span>小时:</span>
+                <Select
+                  value={selectedHour}
+                  style={{ width: 160 }}
+                  onChange={(value) => { this.props.updateSelectedHour(value); }}
+                >
+                  {options}
+                </Select>
+              </div>
             </TabPane>
           </Tabs>
         </div>
@@ -556,6 +664,63 @@ class Portal extends Component {
     showLink(this.map, sourceNode, targetNode);
   }
 
+  kSelectedArea(id) {
+    const { researchModel, kAreaResult, clusters } = this.props;
+
+    if (this.researchArea) {
+      clearArea(this.map, this.researchArea);
+      this.researchArea = null;
+    }
+
+    if (researchModel === 'k') {
+      this.researchArea = showArea(this.map, kAreaResult[id]);
+    }
+
+    if (researchModel === 'p') {
+      const selectedArea = _.find(clusters, { id, });
+      this.researchArea = showArea(this.map, selectedArea);
+    }
+  }
+
+  kSelectedAreaLink(relations) {
+    const { allNodesList } = this.props;
+
+    const count = relations.length;
+
+    if (this.researchAreaLink) {
+      clearAreaLink(this.map, this.researchAreaLink);
+      this.researchAreaLink = null;
+    }
+
+    const self = this;
+    if (count > 3000) {
+      confirm({
+        title: '提醒',
+        content: `区域间关联边数为${count}, 边数过多, 直接渲染在地图上较慢且可能引起浏览器崩溃，可以分时段/分区域研究，是否继续执行?`,
+        onOk() {
+          self.researchAreaLink = showAreaLink(self.map, relations, allNodesList);
+        },
+        onCancel() {},
+      });
+
+      return;
+    }
+
+    self.researchAreaLink = showAreaLink(self.map, relations, allNodesList);
+  }
+
+  // 清除地理映射
+  clearKSelectedArea() {
+    if (this.researchArea) {
+      clearArea(this.map, this.researchArea);
+      this.researchArea = null;
+    }
+    if (this.researchAreaLink) {
+      clearAreaLink(this.map, this.researchAreaLink);
+      this.researchAreaLink = null;
+    }
+  }
+
   render() {
     const { height, isShowPanel } = this.state;
 
@@ -563,7 +728,7 @@ class Portal extends Component {
       clusterCount, allNodesList, clusterStatus, isClusterZoom,
       changeIsZoom, kSelectedNode,
       selectedDate, selectedHour, nodeLinkData, selectedCluster,
-      loadingTip } = this.props;
+      loadingTip, tabModelKey, researchClusters } = this.props;
 
     return (
       <Spin
@@ -626,7 +791,6 @@ class Portal extends Component {
               kSelectedNode={kSelectedNode}
               kSelectedNodeFn={this.props.kSelectedNodeFn}
               updateClusters={this.props.updateClusters}
-              calClustersDis={this.props.calClustersDis}
               setProgress={this.setProgress.bind(this)}
               isRender={selectedKeys[0] === 'kCluster' && isShowPanel}
               updateConvexHull={::this.handleUpdateConvexHull}
@@ -642,13 +806,19 @@ class Portal extends Component {
               data={nodeLinkData}
               date={selectedDate}
               hour={selectedHour}
-              cluster={selectedCluster}
-              requestData={this.props.getNodeLinkData}
+              tabModelKey={tabModelKey}
+              // 研究对象, 切换时清空
+              cluster={tabModelKey === "1" ? selectedCluster : researchClusters}
+              // 数据请求方法
+              requestData={tabModelKey === "1" ? this.props.getNodeLinkData : this.props.calClustersDis}
               isRender={selectedKeys[0] === 'force' && isShowPanel}
               kSelectedNodeFn={this.props.kSelectedNodeFn}
-              updateClusters={this.props.updateClusters}
               updateSelectedLink={this.props.updateSelectedLink}
               changeMapLink={::this.changeMapLink}
+              updateClusters={this.props.updateClusters}
+              // 区域间选择显示区域
+              kSelectedArea={::this.kSelectedArea}
+              kSelectedAreaLink={::this.kSelectedAreaLink}
             />
             <AreaLine
               width={800}

@@ -132,7 +132,7 @@ function attraction(x, k, ca, weight = 0) {
   return x * x / k * (ca + weight);
 }
 
-function calculateAttractionDisp(sourceNode, targetNode, k, ca) {
+function calculateAttractionDisp(sourceNode, targetNode, k, ca, weight) {
   const { cx: sourceX, cy: sourceY } = sourceNode;
   const { cx: targetX, cy: targetY } = targetNode;
 
@@ -147,21 +147,21 @@ function calculateAttractionDisp(sourceNode, targetNode, k, ca) {
     targetXDisp: 0,
     targetYDisp: 0,
   } : {
-    sourceXDisp: (-1) * attraction(l, k, ca) * (x / l),
-    sourceYDisp: (-1) * attraction(l, k, ca) * (y / l),
-    targetXDisp: attraction(l, k, ca) * (x / l),
-    targetYDisp: attraction(l, k, ca) * (y / l),
+    sourceXDisp: (-1) * attraction(l, k, ca, weight) * (x / l),
+    sourceYDisp: (-1) * attraction(l, k, ca, weight) * (y / l),
+    targetXDisp: attraction(l, k, ca, weight) * (x / l),
+    targetYDisp: attraction(l, k, ca, weight) * (y / l),
   }
 }
 
 function calculateAttraction(nodes, links, k, ca) {
   links.forEach((link, i) => {
-    const { source, target } = link;
+    const { source, target, value } = link;
     let { node: sourceNode, index: sourceIndex } = find(nodes, { id: source }, 'id');
     let { node: targetNode, index: targetIndex } = find(nodes, { id: target }, 'id');
 
     const { sourceXDisp, sourceYDisp,
-     targetXDisp, targetYDisp } = calculateAttractionDisp(sourceNode, targetNode, k, ca);
+     targetXDisp, targetYDisp } = calculateAttractionDisp(sourceNode, targetNode, k, ca, value);
 
     nodes[sourceIndex] = Object.assign({}, sourceNode, {
       dispX: sourceNode.dispX + sourceXDisp,

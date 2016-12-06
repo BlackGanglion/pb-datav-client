@@ -322,28 +322,6 @@ class Kcluster extends Component {
       this.handleZoom();
       const clusters = this.kmeans();
 
-      /*
-      const nodeMap = [];
-      for(let i = 0; i < clusters.length; i++) {
-        const { nodeList } = clusters[i];
-        for(let j = 0; j < nodeList.length; j++) {
-          const { id } = nodeList[j];
-          nodeMap.push({
-            id,
-            clusterId: i,
-          });
-        }
-      }
-
-      const clustersInfo = {
-        count: clusters.length,
-        nodeMap,
-      }
-      */
-
-      // 计算聚类与聚类之间的关系
-      // this.props.calClustersDis(clustersInfo);
-
       // 进度圈
       this.props.setProgress(this.delay);
 
