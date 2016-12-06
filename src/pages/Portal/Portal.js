@@ -70,6 +70,7 @@ class Portal extends Component {
     changeAllStaMethod: PropTypes.func,
     updateCluster: PropTypes.func,
     deleteCluster: PropTypes.func,
+    updateAreaLineConfig: PropTypes.func,
   };
 
   constructor(props) {
@@ -82,6 +83,12 @@ class Portal extends Component {
       isShowPanel: true,
       // id
       cluster: null,
+
+      // 飞线
+      startSelectedDate: '2014-03-23',
+      startSelectedHour: '00',
+      endSelectedDate: '2014-03-23',
+      endSelectedHour: '23',
     };
   }
 
@@ -343,7 +350,33 @@ class Portal extends Component {
     const { selectedKeys, clusterCount, clusterStatus,
       selectedDate, selectedHour, allStaMethod,
       isShowKResult, kAreaResult,
-      tabModelKey, clusters } = this.props;
+      tabModelKey, clusters, isShowtexts } = this.props;
+
+    const options = [];
+    options.push(
+      <Option value="-1" key="-1">全天</Option>
+    );
+    for(let i = 0; i <= 23; i++) {
+      if (i >= 10) {
+        options.push(
+          <Option value={String(i)} key={i}>{i}</Option>
+        );
+      } else {
+        options.push(
+          <Option value={`0${i}`} key={i}>{`0${i}`}</Option>
+        );
+      }
+    }
+
+    const selectedOptions = [];
+
+    clusters.forEach((cluster, i) => {
+      const { selected, id } = cluster;
+      selectedOptions.push(
+        <Option value={String(i)} key={i}>{`区域${id}`}</Option>
+      );
+    });
+
     if (selectedKeys[0] === 'map') {
       return (
         <div className="portal-control-map">
@@ -442,31 +475,6 @@ class Portal extends Component {
       );
     }
     if (selectedKeys[0] === 'force') {
-      const options = [];
-      options.push(
-        <Option value="-1" key="-1">全天</Option>
-      );
-      for(let i = 0; i <= 23; i++) {
-        if (i >= 10) {
-          options.push(
-            <Option value={String(i)} key={i}>{i}</Option>
-          );
-        } else {
-          options.push(
-            <Option value={`0${i}`} key={i}>{`0${i}`}</Option>
-          );
-        }
-      }
-
-      const selectedOptions = [];
-
-      clusters.forEach((cluster, i) => {
-        const { selected, id } = cluster;
-        selectedOptions.push(
-          <Option value={String(i)} key={i}>{`区域${id}`}</Option>
-        );
-      });
-
       return (
         <div className="portal-control-force">
           <Tabs defaultActiveKey={tabModelKey} onChange={(key) => {
@@ -648,6 +656,131 @@ class Portal extends Component {
       );
     }
 
+    if (selectedKeys[0] === 'areaLine') {
+      const { startSelectedDate, startSelectedHour,
+        endSelectedDate, endSelectedHour, cluster } = this.state;
+
+      return (
+        <div className="portal-control-line">
+          <div className="portal-control-line-item">
+            <Select
+              showSearch
+              style={{ width: '100%' }}
+              placeholder="带有搜索功能, 可直接搜索区域"
+              optionFilterProp="children"
+              onChange={(value) => {
+                this.setState({
+                  cluster: Number(value),
+                });
+              }}
+              notFoundContent="不存在该区域"
+            >
+              {selectedOptions}
+            </Select>
+          </div>
+          <div>
+            <span>开始日期:</span>
+            <DatePicker
+              style={{ width: 120 }}
+              allowClear={false}
+              value={moment(startSelectedDate, 'YYYY-MM-DD')}
+              onChange={(date, dateString) => {
+                this.setState({
+                  startSelectedDate: dateString,
+                });
+              }}
+            />
+            <Select
+              value={startSelectedHour}
+              style={{ width: 50 }}
+              onChange={(value) => {
+                this.setState({
+                  startSelectedHour: value,
+                });
+              }}
+            >
+              {options.slice(1)}
+            </Select>
+          </div>
+          <div className="portal-control-line-item">
+            <span>结束日期:</span>
+            <DatePicker
+              style={{ width: 120 }}
+              allowClear={false}
+              value={moment(endSelectedDate, 'YYYY-MM-DD')}
+              onChange={(date, dateString) => {
+                this.setState({
+                  endSelectedDate: dateString,
+                });
+              }}
+            />
+            <Select
+              value={endSelectedHour}
+              style={{ width: 50 }}
+              onChange={(value) => {
+                this.setState({
+                  endSelectedHour: value,
+                });
+              }}
+            >
+              {options.slice(1)}
+            </Select>
+          </div>
+          <div className="portal-control-line-item">
+            <Button
+              style={{
+                display: 'inline-block',
+                marginLeft: '4px',
+              }}
+              type="primary"
+              onClick={() => {
+                this.setState({
+                  isShowPanel: true,
+                });
+
+                if (cluster == null) {
+                  Modal.error({
+                    title: '提醒',
+                    content: '请选择区域！',
+                  });
+                  return;
+                }
+
+                if (moment(endSelectedDate).diff(moment(startSelectedDate)) < 0
+                  || (moment(endSelectedDate).diff(moment(startSelectedDate)) === 0
+                    && Number(endSelectedHour) < Number(startSelectedHour))) {
+                  Modal.error({
+                    title: '提醒',
+                    content: '结束时间早于开始时间!',
+                  });
+                  return;
+                }
+
+                setTimeout(() => {
+                  this.props.updateAreaLineConfig({
+                    clusterIndex: cluster,
+                    startSelectedDate,
+                    endSelectedDate,
+                    startSelectedHour,
+                    endSelectedHour,
+                  });
+                }, 0);
+              }}
+            >开始</Button>
+            <Button
+              style={{
+                display: 'inline-block',
+                marginLeft: '4px',
+              }}
+              type="primary"
+              onClick={() => {
+                this.props.changeTextsShow(!isShowtexts);
+              }}
+            >{isShowtexts ? '隐藏站点信息' : '显示站点信息'}</Button>
+          </div>
+      </div>);
+    }
+
     return null;
   }
 
@@ -728,7 +861,11 @@ class Portal extends Component {
       clusterCount, allNodesList, clusterStatus, isClusterZoom,
       changeIsZoom, kSelectedNode,
       selectedDate, selectedHour, nodeLinkData, selectedCluster,
-      loadingTip, tabModelKey, researchClusters } = this.props;
+      loadingTip, tabModelKey, researchClusters,
+      startSelectedDate, endSelectedDate,
+      startSelectedHour, endSelectedHour,
+      areaLineCluster, isShowtexts,
+    } = this.props;
 
     return (
       <Spin
@@ -821,10 +958,15 @@ class Portal extends Component {
               kSelectedAreaLink={::this.kSelectedAreaLink}
             />
             <AreaLine
-              width={800}
+              width={900}
               height={600}
-              cluster={selectedCluster}
+              cluster={areaLineCluster}
               isRender={selectedKeys[0] === 'areaLine' && isShowPanel}
+              startSelectedDate={startSelectedDate}
+              startSelectedHour={startSelectedHour}
+              endSelectedDate={endSelectedDate}
+              endSelectedHour={endSelectedHour}
+              isShowtexts={isShowtexts}
             />
           </div>
         </div>

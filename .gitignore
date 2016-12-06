@@ -1,5 +1,6 @@
 node_modules/
-AreaLine*
+AreaLineBase.js
+AreaLineMain.js
 *.log
 *DS_Store*
 watch/

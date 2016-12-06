@@ -81,6 +81,7 @@ class ForceChart extends PureComponent {
     const { data, date, hour, cluster, tabModelKey } = nextProps;
 
     // 渲染卡片，如果数据不为空，更新图
+    /*
     if (!this.props.isRender
       && nextProps.isRender
       && !_.isEmpty(nextProps.data)) {
@@ -91,6 +92,7 @@ class ForceChart extends PureComponent {
         });
       }
     }
+    */
 
     if (nextProps.isRender && this.props.isRender) {
       // 更新数据或配置时，更新图

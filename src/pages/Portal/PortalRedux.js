@@ -45,10 +45,15 @@ const initialState = {
   nodeLinkData: {},
   researchClusters: [],
   // 区域间研究模式, k为K-means，p为上方高亮区域
-  researchModel: null
+  researchModel: null,
 
   // 飞线
-
+  startSelectedDate: null,
+  endSelectedDate: null,
+  startSelectedHour: null,
+  endSelectedHour: null,
+  areaLineCluster: null,
+  isShowtexts: false,
 };
 
 const LOAD_ALLNODES_LIST = ACTION_PREFIX + 'LOAD_ALLNODES_LIST';
@@ -320,6 +325,24 @@ const getResearchClusters = (researchClusters, researchModel) => {
   }
 }
 
+const UPDATE_AREA_LINE_CONFIG = ACTION_PREFIX + 'UPDATE_AREA_LINE_CONFIG';
+
+const updateAreaLineConfig = (config) => {
+  return {
+    type: UPDATE_AREA_LINE_CONFIG,
+    payload: config,
+  }
+}
+
+const CHANGE_TEXTS_SHOW = ACTION_PREFIX + 'CHANGE_TEXTS_SHOW';
+
+const changeTextsShow = (status) => {
+  return {
+    type: CHANGE_TEXTS_SHOW,
+    payload: status,
+  }
+}
+
 export const actions = {
   getAllNodesList,
   openLoading,
@@ -343,6 +366,8 @@ export const actions = {
   changeForceTab,
   updateSelectedLink,
   getResearchClusters,
+  updateAreaLineConfig,
+  changeTextsShow,
 };
 
 function PortalReducer(state = initialState, action) {
@@ -555,6 +580,30 @@ function PortalReducer(state = initialState, action) {
       return {
         ...state,
         nodeLinkData: {},
+      }
+    }
+    case UPDATE_AREA_LINE_CONFIG: {
+      const {
+        clusterIndex,
+        startSelectedDate,
+        endSelectedDate,
+        startSelectedHour,
+        endSelectedHour,
+      } = payload;
+
+      return {
+        ...state,
+        areaLineCluster: state.clusters[clusterIndex],
+        startSelectedDate,
+        endSelectedDate,
+        startSelectedHour,
+        endSelectedHour,
+      }
+    }
+    case CHANGE_TEXTS_SHOW: {
+      return {
+        ...state,
+        isShowtexts: payload,
       }
     }
     default:
