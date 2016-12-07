@@ -86,9 +86,9 @@ class Portal extends Component {
 
       // 飞线
       startSelectedDate: '2014-03-23',
-      startSelectedHour: '00',
+      startSelectedHour: '06',
       endSelectedDate: '2014-03-23',
-      endSelectedHour: '23',
+      endSelectedHour: '22',
     };
   }
 
@@ -350,7 +350,7 @@ class Portal extends Component {
     const { selectedKeys, clusterCount, clusterStatus,
       selectedDate, selectedHour, allStaMethod,
       isShowKResult, kAreaResult,
-      tabModelKey, clusters, isShowtexts } = this.props;
+      tabModelKey, clusters, isShowtexts, forceUpdate } = this.props;
 
     const options = [];
     options.push(
@@ -763,6 +763,7 @@ class Portal extends Component {
                     endSelectedDate,
                     startSelectedHour,
                     endSelectedHour,
+                    forceUpdate: !forceUpdate,
                   });
                 }, 0);
               }}
@@ -864,7 +865,7 @@ class Portal extends Component {
       loadingTip, tabModelKey, researchClusters,
       startSelectedDate, endSelectedDate,
       startSelectedHour, endSelectedHour,
-      areaLineCluster, isShowtexts,
+      areaLineCluster, isShowtexts, forceUpdate,
     } = this.props;
 
     return (
@@ -967,6 +968,7 @@ class Portal extends Component {
               endSelectedDate={endSelectedDate}
               endSelectedHour={endSelectedHour}
               isShowtexts={isShowtexts}
+              forceUpdate={forceUpdate}
             />
           </div>
         </div>

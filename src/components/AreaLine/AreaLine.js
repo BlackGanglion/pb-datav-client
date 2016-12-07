@@ -4,8 +4,11 @@ import { connect } from 'react-redux';
 import { actions } from './AreaLineRedux';
 import setRafTimeout, { clearRafTimeout } from 'setRafTimeout';
 import AreaLineMain from './AreaLineMain';
+import moment from 'moment';
 
 import './AreaLine.scss';
+
+const duration = 8000;
 
 @connect((state, ownProps) => {
   return {
@@ -16,34 +19,18 @@ import './AreaLine.scss';
 })
 class AreaLine extends PureComponent {
   componentWillReceiveProps(nextProps) {
-    /*
-    if (!this.props.isRender && nextProps.isRender) {
-      if (!_.isEmpty(nextProps.cluster)
-        && !_.isEqual(this.props.cluster, nextProps.cluster)) {
-        const nodeList = this.initPos(nextProps.cluster);
-        console.log(nodeList);
-        this.props.updateNodeList(nodeList);
-        const container = this.refs.container;
-        const shoot = new AreaLineMain(container, {
-          width: 900,
-          height: 600,
-          nodeList,
-        });
-
-        this.shoot = shoot;
-      }
-    }
-      this.shoot.render([{
-        source: 5470,
-        target: 5510,
-      }]);
-    */
-
     if (this.props.isRender && nextProps.isRender) {
       const { cluster, startSelectedDate, startSelectedHour,
-        endSelectedDate, endSelectedHour, width, height } = nextProps;
+        endSelectedDate, endSelectedHour,
+        width, height, forceUpdate } = nextProps;
+
       // 更新聚类后重新计算点坐标
-      if (!_.isEqual(cluster, this.props.cluster) && !_.isEmpty(cluster)) {
+      const isClusterUpdate = !_.isEqual(cluster, this.props.cluster) && !_.isEmpty(cluster);
+
+      if (isClusterUpdate) {
+        // 先暂停当前动画
+        if(this.timer) clearRafTimeout(this.timer);
+
         const nodeList = this.initPos(nextProps.cluster);
 
         if (this.shoot) {
@@ -56,6 +43,7 @@ class AreaLine extends PureComponent {
           width,
           height,
           nodeList,
+          duration,
         });
 
         this.shoot = shoot;
@@ -64,23 +52,75 @@ class AreaLine extends PureComponent {
         this.props.updateNodeList(nodeList);
       }
 
-      // 更新坐标后，重新绘制点的坐标底图，初始化飞线图，请求数据
-      if (!_.isEqual(nextProps.nodeList, this.props.nodeList)) {
-        // this.renderNodeMap();
-        // this.shoot = this.renderAreaLine();
-
-        // this.timer =
-
-        /*
+      // 更新周期，重新请求参数
+      if (isClusterUpdate
         || !_.isEqual(startSelectedDate, this.props.startSelectedDate)
         || !_.isEqual(startSelectedHour, this.props.startSelectedHour)
         || !_.isEqual(endSelectedDate, this.props.endSelectedDate)
         || !_.isEqual(endSelectedHour, this.props.endSelectedHour)
-        */
+        || forceUpdate !== this.props.forceUpdate) {
+
+        // 初始化
+        this.props.initAreaLine();
+
+        if (this.shoot) this.shoot.stopAnimate();
+        if (this.timer) clearRafTimeout(this.timer);
+
+        setTimeout(() => {
+          this.requestNextData({
+            ...nextProps,
+            curDate: null,
+            curHour: null,
+          });
+        }, 0);
       }
 
       // 更新数据，将数据加入飞线池
+      if (!_.isEqual(nextProps.data, this.props.data)) {
+        this.shoot.render(nextProps.data);
+      }
+    }
+  }
 
+  // 请求数据
+  requestNextData(props) {
+    const { curDate, curHour, cluster,
+      startSelectedDate, startSelectedHour,
+      endSelectedDate, endSelectedHour } = props;
+
+    let nextDate;
+    let nextHour;
+    // 第一次请求
+    if (curDate === null && curHour === null) {
+      nextDate = startSelectedDate;
+      nextHour = startSelectedHour;
+    } else {
+      // 累加一个小时
+      if (curHour === '23') {
+        nextHour = '00';
+        nextDate = moment(curDate).add(1, 'days').format('YYYY-MM-DD');
+      } else {
+        nextDate = curDate;
+        nextHour = 1 + Number(curHour);
+        if (nextHour < 10) {
+          nextHour = '0' + String(nextHour);
+        }
+        nextHour = String(nextHour);
+      }
+    }
+
+    this.props.requestAreaLineData(cluster, nextDate, nextHour);
+
+    // 判断是否和结束时间相等
+    if (!(endSelectedDate === nextDate && endSelectedHour === nextHour)) {
+      console.log(nextDate, nextHour);
+      this.timer = setRafTimeout(() => {
+        this.requestNextData({
+          ...props,
+          curDate: nextDate,
+          curHour: nextHour
+        });
+      }, duration);
     }
   }
 
@@ -121,6 +161,29 @@ class AreaLine extends PureComponent {
     });
   }
 
+  renderTime() {
+    const { curDate, curHour, count, isStart } = this.props;
+
+    if (curHour === null || curDate === null) {
+      if (isStart) {
+        return (
+          <div className="area-line-time">
+            <span>请求数据与计算中...</span>
+          </div>
+        );
+      }
+      return null;
+    }
+    return (
+      <div className="area-line-time">
+        <span>当前时间:</span>
+        <span>{curDate}</span>
+        <span>{`${curHour}点`}</span>
+        <span>{`(当时段车流量: ${count})`}</span>
+      </div>
+    );
+  }
+
   render() {
     const { nodeList } = this.props;
 
@@ -154,6 +217,7 @@ class AreaLine extends PureComponent {
         display: this.props.isRender ? 'block' : 'none',
       }}>
         <div className="area-line-node">
+          {this.renderTime()}
           {nodes}
           {this.props.isShowtexts ? texts : null}
         </div>

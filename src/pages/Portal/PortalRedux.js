@@ -54,6 +54,7 @@ const initialState = {
   endSelectedHour: null,
   areaLineCluster: null,
   isShowtexts: false,
+  forceUpdate: false,
 };
 
 const LOAD_ALLNODES_LIST = ACTION_PREFIX + 'LOAD_ALLNODES_LIST';
@@ -589,6 +590,7 @@ function PortalReducer(state = initialState, action) {
         endSelectedDate,
         startSelectedHour,
         endSelectedHour,
+        forceUpdate,
       } = payload;
 
       return {
@@ -598,6 +600,7 @@ function PortalReducer(state = initialState, action) {
         endSelectedDate,
         startSelectedHour,
         endSelectedHour,
+        forceUpdate,
       }
     }
     case CHANGE_TEXTS_SHOW: {

@@ -1,8 +1,19 @@
 .area-line {
-  background-color: rgba(48, 113, 169, 0.8);
+  background-color: rgba(20, 85, 193, 0.8);
   width: 900px;
   height: 600px;
   position: relative;
+  .area-line-time {
+    position: absolute;
+    top: 0;
+    left: 0;
+    color: yellow;
+    font-size: 16px;
+    > span {
+      display: inline-block;
+      margin: 6px;
+    }
+  }
   .area-line-node {
     position: absolute;
     width: 900px;
