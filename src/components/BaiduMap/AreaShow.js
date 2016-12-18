@@ -108,13 +108,15 @@ function showArea(map, cluster, kSelectedNodeFn) {
 }
 
 function clearArea(map, selectedHandler) {
-  const { polygon, markers } = selectedHandler;
+  if (selectedHandler) {
+    const { polygon, markers } = selectedHandler;
 
-  if (polygon) map.removeOverlay(polygon);
-  if (markers && markers.length) {
-    markers.forEach((marker) => {
-      map.removeOverlay(marker);
-    });
+    if (polygon) map.removeOverlay(polygon);
+    if (markers && markers.length) {
+      markers.forEach((marker) => {
+        map.removeOverlay(marker);
+      });
+    }
   }
 }
 
@@ -196,6 +198,33 @@ function clearAreaLink(map, handler) {
   }
 }
 
+function showNodes(map, node) {
+  const { x, y } = node;
+
+  const marker = new BMap.Marker(new BMap.Point(x, y));
+
+  map.addOverlay(marker);
+
+  return marker;
+}
+
+function clearNodes(map, nodes) {
+  if (nodes && nodes.length) {
+    nodes.forEach((node) => {
+      if (node.handler) {
+        map.removeOverlay(node.handler);
+      }
+    });
+  }
+}
+
+function clearNode(map, nodes, id) {
+  const node = _.find(nodes, { id, });
+  if (node.handler) {
+    map.removeOverlay(node.handler);
+  }
+}
+
 export {
   showArea,
   clearArea,
@@ -203,5 +232,8 @@ export {
   clearLink,
   showAreaLink,
   clearAreaLink,
+  showNodes,
+  clearNodes,
+  clearNode,
 }
 

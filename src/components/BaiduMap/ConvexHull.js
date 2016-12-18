@@ -67,6 +67,7 @@ export default function (map, areaPolygon, clusters, updateClusters) {
         strokeWeight: 4,
       });
 
+    /*
     const pt = new BMap.Point(centroid.x, centroid.y);
 
     const marker = new BMap.Marker(pt, {icon: new BMap.Icon(
@@ -82,11 +83,47 @@ export default function (map, areaPolygon, clusters, updateClusters) {
         onCancel() {},
       });
     });
+    */
 
-    markers.push(marker);
+    const hLine = new BMap.Polyline([
+        new BMap.Point(centroid.x - 0.005, centroid.y),
+        new BMap.Point(centroid.x + 0.005, centroid.y),
+      ],
+      { strokeColor: "red", strokeWeight: 10, strokeOpacity: 0.5, cursor: 'pointer' }
+    );
 
-    map.addOverlay(marker);
+    const sLine = new BMap.Polyline([
+        new BMap.Point(centroid.x, centroid.y - 0.005),
+        new BMap.Point(centroid.x, centroid.y + 0.005),
+      ],
+      { strokeColor: "red", strokeWeight: 10, strokeOpacity: 0.5, cursor: 'pointer' }
+    );
+
+    hLine.addEventListener("click", function(){
+      confirm({
+        title: '提醒',
+        content: '是否添加该区域到区域栏',
+        onOk() { updateClusters([cluster]); },
+        onCancel() {},
+      });
+    });
+
+    sLine.addEventListener("click", function(){
+      confirm({
+        title: '提醒',
+        content: '是否添加该区域到区域栏',
+        onOk() { updateClusters([cluster]); },
+        onCancel() {},
+      });
+    });
+
+    markers.push(hLine);
+    markers.push(sLine);
+
+    // map.addOverlay(marker);
     map.addOverlay(polygon);
+    map.addOverlay(sLine);
+    map.addOverlay(hLine);
 
     newAreaPolygon.push(polygon);
   });

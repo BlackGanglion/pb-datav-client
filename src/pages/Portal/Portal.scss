@@ -19,35 +19,87 @@
     .portal-main-list-control {
       position: absolute;
       top: 40px;
-      left: 800px;
+      left: 710px;
     }
-    .portal-cluster {
-      background-color: $background-primary;
-      height: 60px;
-      width: 790px;
-      padding: 10px;
-      margin-bottom: 15px;
-      overflow-x: scroll;
-      white-space: nowrap;
-      .cluster-empty {
-        color: #6e5398;
-        font-size: 18px;
-        line-height: 40px;
-        text-align: center;
-        display: block;
-        width: 100%;
-      }
-      .portal-cluster-item {
-        line-height: 30px;
-        text-align: center;
-        color: #fff;
-        margin: 0 4px;
-        .icon {
-          position: absolute;
-          top: -12px;
-          right: -9px;
-          color: #d81e06;
+    .cluster-empty {
+      color: #6e5398;
+      font-size: 18px;
+      line-height: 40px;
+      text-align: center;
+      display: block;
+      width: 100%;
+    }
+    .portal-cluster-main {
+      width: 700px;
+      position: relative;
+      .portal-cluster {
+        background-color: $background-primary;
+        height: 34px;
+        width: 700px;
+        overflow-x: scroll;
+        padding-bottom: 8px;
+        white-space: nowrap;
+        position: relative;
+        .portal-cluster-item {
+          line-height: 30px;
+          text-align: center;
+          color: #fff;
+          margin: 0 4px;
+          .icon {
+            position: absolute;
+            top: -8px;
+            right: -5px;
+            color: #d81e06;
+            cursor: pointer;
+          }
         }
+      }
+      .icon {
+        position: absolute;
+        top: 0px;
+        right: 0px;
+        color: #d81e06;
+        cursor: pointer;
+      }
+    }
+    .portal-nodes-main {
+      width: 700px;
+      position: relative;
+      .portal-nodes {
+        background-color: $background-primary;
+        height: 34px;
+        width: 700px;
+        padding-bottom: 8px;
+        overflow-x: scroll;
+        white-space: nowrap;
+        position: relative;
+        .portal-node-item {
+          line-height: 30px;
+          text-align: center;
+          color: #fff;
+          margin: 0 4px;
+          .icon {
+            position: absolute;
+            top: -8px;
+            right: -5px;
+            color: #d81e06;
+            cursor: pointer;
+          }
+        }
+      }
+      .icon-join {
+        position: absolute;
+        top: 0px;
+        right: 15px;
+        color: #13227a;
+        cursor: pointer;
+      }
+      .icon-delete {
+        position: absolute;
+        top: 0px;
+        right: 0px;
+        color: #d81e06;
+        cursor: pointer;
       }
     }
   }
@@ -113,6 +165,12 @@
     .station-info {
       max-height: 160px;
       overflow: scroll;
+      position: relative;
+      .station-info-add {
+        position: absolute;
+        right: 22px;
+        top: 0px;
+      }
     }
   }
 }

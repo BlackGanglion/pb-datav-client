@@ -24,7 +24,9 @@ import convexHull, { clearAreaPolygon } from 'components/BaiduMap/ConvexHull'
 import Kcluster from 'components/Kcluster/Kcluster';
 import ForceChart from 'components/ForceChart/ForceChart';
 import AreaLine from 'components/AreaLine/AreaLine';
-import { showArea, clearArea, showLink, showAreaLink, clearAreaLink } from 'components/BaiduMap/AreaShow';
+import { showArea, clearArea,
+  showLink, showAreaLink, clearAreaLink,
+  showNodes, clearNodes, clearNode } from 'components/BaiduMap/AreaShow';
 
 @connect((state, ownProps) => {
   return {
@@ -93,7 +95,7 @@ class Portal extends Component {
   }
 
   initMap(nodes) {
-    const { updateClusters, kSelectedNodeFn } = this.props;
+    const { updateClusters, kSelectedNodeFn, allStaMethod } = this.props;
     // 创建地图实例
     this.map = new BMap.Map("allmap");
     // 创建点坐标
@@ -107,12 +109,18 @@ class Portal extends Component {
     this.map.addControl(new BMap.NavigationControl());
 
     // 百度地图原生聚类
-    this.markersCluster = markersCluster(this.map, nodes, kSelectedNodeFn);
+    if (allStaMethod === 'cluster') {
+      this.markersCluster = markersCluster(this.map, nodes, kSelectedNodeFn);
+    } else {
+      this.pointCollection = pointsCluster(this.map, nodes, kSelectedNodeFn);
+    }
 
     // 初始化地图圈画
     circleLocalSearch(this.map, nodes, updateClusters);
 
     this.props.closeLoading();
+
+    this.selectedNodes = [];
   }
 
   handleReheight() {
@@ -143,6 +151,8 @@ class Portal extends Component {
     // 区域间研究时区域显示
     this.researchArea = null;
     this.researchAreaLink = null;
+    // 节点选择时
+    this.selectedNodes = null;
   }
 
   reInitMap(props) {
@@ -177,15 +187,11 @@ class Portal extends Component {
   handleMeunClick(e) {
     const { key } = e;
 
-    if (key === 'force' || key === 'areaLine') {
-      message.info('请选择区域与时间', 5);
-    }
-
     this.props.changeSelectKeys(key);
   }
 
   renderPortalInfo() {
-    const { selectedKeys, kSelectedNode } = this.props;
+    const { selectedKeys, kSelectedNode, nodes, allNodesList } = this.props;
     if (_.isEmpty(kSelectedNode)) return null;
 
     if (_.isObject(kSelectedNode) && kSelectedNode.relations) {
@@ -200,10 +206,13 @@ class Portal extends Component {
         return <div key={i}>{`${hour}时 ${source}->${target} 流量:${value}`}</div>
       });
 
+      const sourceNode = _.find(allNodesList, { id: Number(source) });
+      const targetNode = _.find(allNodesList, { id: Number(target) });
+
       return (
         <div className="link-info">
           <div>
-            <strong>{`${source} 与 ${target} 间`}</strong>(<span>{` 车流量( ${value} )`}</span>)
+            <strong>{`${sourceNode.name}(${source}) 与 ${targetNode.name}(${target}) 间`}</strong>(<span>{` 车流量( ${value} )`}</span>)
           </div>
           <div>
             {relationItems}
@@ -214,7 +223,23 @@ class Portal extends Component {
 
     const { id, x, y, name, rx, ry, address, servicetime } = kSelectedNode;
 
+    const disabled = !(_.find(nodes, { id, }) === undefined);
+
     return (<div className="station-info">
+      <Button
+        className="station-info-add"
+        type="primary"
+        disabled={disabled}
+        onClick={() => {
+          this.props.addSelectedNode(kSelectedNode);
+
+          // 映射到地图上
+          this.selectedNodes.push({
+            id,
+            handler: showNodes(this.map, kSelectedNode),
+          });
+        }}
+      >选择</Button>
       <div className="im">
         <strong>{`${id}: ${name}`}</strong>
       </div>
@@ -303,6 +328,7 @@ class Portal extends Component {
 
         return (
           <Button
+            size="small"
             className="portal-cluster-item"
             style={{
               backgroundColor: color,
@@ -344,6 +370,44 @@ class Portal extends Component {
     }
 
     return <span className="cluster-empty">暂无生成区域</span>;
+  }
+
+  renderPortalNodes() {
+    const { nodes } = this.props;
+
+    if (nodes && nodes.length) {
+      return nodes.map((node, i) => {
+        const { id } = node;
+
+        return (
+          <Button
+            size="small"
+            type="primary"
+            className="portal-node-item"
+            key={i}
+          >
+            <i className="icon icon-delete"
+              onClick={(e) => {
+                e.stopPropagation();
+
+                const self = this;
+                confirm({
+                  title: '提醒',
+                  content: '是否删除当前节点?',
+                  onOk() {
+                    self.props.deleteSelectedNode(id);
+
+                    clearNode(self.map, self.selectedNodes, id);
+                  },
+                  onCancel() {},
+                });
+              }}></i>
+            {`节点 ${id}`}
+          </Button>
+        );
+      });
+    }
+    return <span className="cluster-empty">暂无选择节点</span>;
   }
 
   renderPortalControl() {
@@ -907,8 +971,78 @@ class Portal extends Component {
             </div>
           </div>
           <div className="portal-main-list">
-            <div className="portal-cluster">
-              {this.renderPortalCluster()}
+            <div className="portal-cluster-main">
+              <div className="portal-cluster">
+                {this.renderPortalCluster()}
+              </div>
+              <i className="icon icon-delete"
+                onClick={(e) => {
+                  const { clusters } = this.props;
+
+                  console.log(clusters);
+
+                  e.stopPropagation();
+                  const self = this;
+
+                  if (clusters && clusters.length > 0) {
+                    confirm({
+                      title: '提醒',
+                      content: '是否删除所有区域?',
+                      onOk() {
+                        clusters.forEach((cluster) => {
+                          clearArea(self.map, cluster.selectedHandler);
+                        });
+                        self.props.deleteClusters();
+                      },
+                      onCancel() {},
+                    });
+                  }
+                }}></i>
+            </div>
+            <div className="portal-nodes-main">
+              <div className="portal-nodes">
+                {this.renderPortalNodes()}
+              </div>
+              <i className="icon icon-join"
+                onClick={(e) => {
+                  const { nodes } = this.props;
+                  e.stopPropagation();
+
+                  const self = this;
+
+                  if (nodes && nodes.length) {
+                    confirm({
+                      title: '提醒',
+                      content: '是否合并当前节点成为一个区域?',
+                      onOk() {
+                        self.props.joinSelectNodes();
+
+                        clearNodes(self.map, self.selectedNodes);
+                      },
+                      onCancel() {},
+                    });
+                  }
+                }}
+              ></i>
+              <i className="icon icon-delete"
+                onClick={(e) => {
+                  const { nodes } = this.props;
+                  e.stopPropagation();
+
+                  const self = this;
+                  if (nodes && nodes.length) {
+                    confirm({
+                      title: '提醒',
+                      content: '是否删除所有节点?',
+                      onOk() {
+                        self.props.deleteSelectedNodes();
+
+                        clearNodes(self.map, self.selectedNodes);
+                      },
+                      onCancel() {},
+                    });
+                  }
+                }}></i>
             </div>
             <Button
               type="primary"

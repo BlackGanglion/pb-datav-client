@@ -1,6 +1,7 @@
 import { combineReducers } from 'redux';
 import { getUrl } from 'utils/UrlMap';
 import _ from 'lodash';
+import { randomColor } from 'utils/utils';
 
 import ForceReducer from 'components/ForceChart/ForceRedux';
 import AreaLineReducer from 'components/AreaLine/AreaLineRedux';
@@ -19,12 +20,14 @@ const initialState = {
   kSelectedNode: null,
   // 区域列表
   clusters: [],
+  // 节点列表
+  nodes: [],
   // 区域自增id
   id: 0,
 
   // 站点底图
   // scatter, cluster
-  allStaMethod: 'cluster',
+  allStaMethod: 'scatter',
   isShowKResult: true,
 
   // K聚类
@@ -160,6 +163,15 @@ const deleteCluster = (index) => {
   return {
     type: DELECT_CLUSTER,
     payload: index,
+  }
+}
+
+const DELECT_CLUSTERS = ACTION_PREFIX + 'DELECT_CLUSTERS';
+
+// 删除区域组
+const deleteClusters = () => {
+  return {
+    type: DELECT_CLUSTERS,
   }
 }
 
@@ -344,6 +356,47 @@ const changeTextsShow = (status) => {
   }
 }
 
+const ADD_SELECT_NODES = ACTION_PREFIX + 'ADD_SELECT_NODES';
+
+const addSelectedNode = (node) => {
+  return {
+    type: ADD_SELECT_NODES,
+    payload: node,
+  }
+}
+
+const DELECTE_SELECT_NODE = ACTION_PREFIX + 'DELECTE_SELECT_NODE';
+
+const deleteSelectedNode = (id) => {
+  return {
+    type: DELECTE_SELECT_NODE,
+    payload: id,
+  }
+}
+
+const DELECTE_SELECT_NODES = ACTION_PREFIX + 'DELECTE_SELECT_NODES';
+
+const deleteSelectedNodes = () => {
+  return {
+    type: DELECTE_SELECT_NODES,
+  }
+}
+
+const joinSelectNodes = () => {
+  return (dispatch, getState) => {
+    const state = getState();
+
+    const { nodes } = state.portal.page;
+
+    dispatch(updateClusters([{
+      nodeList: nodes,
+      color: randomColor(),
+    }]));
+
+    return dispatch(deleteSelectedNodes());
+  }
+}
+
 export const actions = {
   getAllNodesList,
   openLoading,
@@ -364,11 +417,17 @@ export const actions = {
   changeIsShowKResult,
   updateCluster,
   deleteCluster,
+  deleteClusters,
   changeForceTab,
   updateSelectedLink,
   getResearchClusters,
   updateAreaLineConfig,
   changeTextsShow,
+
+  addSelectedNode,
+  deleteSelectedNode,
+  deleteSelectedNodes,
+  joinSelectNodes,
 };
 
 function PortalReducer(state = initialState, action) {
@@ -548,6 +607,12 @@ function PortalReducer(state = initialState, action) {
         clusters: newClusters,
       }
     }
+    case DELECT_CLUSTERS: {
+      return {
+        ...state,
+        clusters: [],
+      }
+    }
     case CHANGE_FORCE_TAB: {
       return {
         ...state,
@@ -607,6 +672,30 @@ function PortalReducer(state = initialState, action) {
       return {
         ...state,
         isShowtexts: payload,
+      }
+    }
+    case ADD_SELECT_NODES: {
+      return {
+        ...state,
+        nodes: [
+          ...state.nodes,
+          payload,
+        ],
+      }
+    }
+    case DELECTE_SELECT_NODE: {
+      const id = payload;
+      return {
+        ...state,
+        nodes: state.nodes.filter((node) => {
+          return node.id !== id;
+        })
+      }
+    }
+    case DELECTE_SELECT_NODES: {
+      return {
+        ...state,
+        nodes: [],
       }
     }
     default:

@@ -208,7 +208,10 @@ class Kcluster extends Component {
       clusterAssment.push(-1);
     }
 
+    let I = 0;
+
     while(clusterChanged) {
+      I++;
       clusters = [];
       for (let i = 0; i < k; i++) {
         clusters.push(new Array());
@@ -251,6 +254,8 @@ class Kcluster extends Component {
         this.changeCentroid(this.centroids, i);
       }
     }
+
+    console.log(I);
 
     return clusters.map((cluster, i) => {
       return {
