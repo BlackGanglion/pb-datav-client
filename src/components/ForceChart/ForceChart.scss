@@ -15,6 +15,10 @@
 .force-chart {
   background-color: $background-primary;
   position: relative;
+  .combo-input {
+    width: 900px;
+    height: 600px;
+  }
   .force-chart-main {
     background-color: transparent;
   }

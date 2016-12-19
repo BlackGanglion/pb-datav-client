@@ -930,6 +930,7 @@ class Portal extends Component {
       startSelectedDate, endSelectedDate,
       startSelectedHour, endSelectedHour,
       areaLineCluster, isShowtexts, forceUpdate,
+      isInputCombo, clubNumber,
     } = this.props;
 
     return (
@@ -1091,6 +1092,9 @@ class Portal extends Component {
               // 区域间选择显示区域
               kSelectedArea={::this.kSelectedArea}
               kSelectedAreaLink={::this.kSelectedAreaLink}
+              isInputCombo={isInputCombo}
+              comboUpdate={this.props.comboUpdate}
+              clubNumber={this.props.clubNumber}
             />
             <AreaLine
               width={900}

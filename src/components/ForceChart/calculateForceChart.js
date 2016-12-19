@@ -275,6 +275,66 @@ function updateClubNodes(nodes, clubNodes, gc) {
   });
 }
 
+// combo
+function comboUpdateClubNodes(nodes, clubNodes, gc) {
+  if (nodes[0].clubNodeNumber === -1) return;
+
+  for(let i = 0; i < clubNodes.length; i++) {
+    clubNodes[i] = {
+      count: 0,
+      cx: 0,
+      cy: 0,
+      ox: clubNodes[i].ox,
+      oy: clubNodes[i].oy,
+      queue: [],
+      path: clubNodes[i].path,
+      degreeCount: 0,
+    }
+  }
+
+  nodes.forEach((node) => {
+    clubNodes[node.clubNodeNumber].count++;
+  });
+
+  nodes.forEach((node) => {
+    const { cx, cy, count } = clubNodes[node.clubNodeNumber];
+    clubNodes[node.clubNodeNumber].cx = cx + (node.cx / count);
+    clubNodes[node.clubNodeNumber].cy = cy + (node.cy / count);
+    clubNodes[node.clubNodeNumber].queue.push(node.id);
+    clubNodes[node.clubNodeNumber].degreeCount += node.degreeCenter;
+  });
+
+  // 社团中心的斥力
+  const records = [];
+  for(let i = 0; i < clubNodes.length; i++) {
+    records[i] = {
+      cx: 0,
+      cy: 0,
+    };
+    for(let j = 0; j < clubNodes.length; j++) {
+      if (i === j) continue;
+      const x = clubNodes[i].cx - clubNodes[j].cx;
+      const y = clubNodes[i].cy - clubNodes[j].cy;
+      const dis = Math.sqrt(x * x + y * y);
+
+      if (dis !== 0) {
+        const f = gc * clubNodes[i].degreeCount * clubNodes[j].degreeCount / dis;
+        records[i].cx = records[i].cx + f * (x / dis);
+        records[i].cy = records[i].cy + f * (y / dis);
+      }
+    }
+  }
+
+  clubNodes.forEach((node, i) => {
+    clubNodes[i].cx = clubNodes[i].cx + records[i].cx;
+    clubNodes[i].cy = clubNodes[i].cy + records[i].cy;
+    clubNodes[i].path.push({
+      dx: node.cx - node.ox,
+      dy: node.cy - node.oy,
+    })
+  });
+}
+
 function calculateClubForce(node, clubNode, g) {
   const x = clubNode.cx - node.cx;
   const y = clubNode.cy - node.cy;
@@ -327,6 +387,47 @@ function calculateClubAttraction(nodes, clubNodes, g) {
 
     nodes[i] = Object.assign({}, node, {
       clubNodeNumber,
+      dispX: node.dispX + resultForce.dispX,
+      dispY: node.dispY + resultForce.dispY,
+    });
+  });
+}
+
+function comboCalculateClubAttraction(nodes, clubNodes, g) {
+  let resultForce;
+
+  nodes.forEach((node, i) => {
+    const realGroup = Number(node.realGroup);
+
+    let clubNodeNumber;
+
+    const res = calculateClubForce(node, clubNodes[realGroup], g);
+
+    resultForce = {
+      dis: res.dis,
+      dispX: res.dispX,
+      dispY: res.dispY,
+    };
+
+    /*
+    clubNodes.forEach((clubNode, j) => {
+      const res = calculateClubForce(node, clubNode, g);
+
+      if (res.dis < resultForce.dis) {
+        resultForce = {
+          dis: res.dis,
+          dispX: res.dispX,
+          dispY: res.dispY,
+        }
+        clubNodeNumber = j;
+      }
+    });
+    */
+
+    // console.log(clubNodes, clubNodeNumber);
+
+    nodes[i] = Object.assign({}, node, {
+      clubNodeNumber: realGroup,
       dispX: node.dispX + resultForce.dispX,
       dispY: node.dispY + resultForce.dispY,
     });
@@ -416,8 +517,10 @@ export default function calculateForceChart(width, height, props) {
     // 社团引力
     // 更新社团中心
     if (isUseClub) {
-      updateClubNodes(nodes, clubNodes, gc);
-      calculateClubAttraction(nodes, clubNodes, g);
+      // updateClubNodes(nodes, clubNodes, gc);
+      // calculateClubAttraction(nodes, clubNodes, g);
+      comboUpdateClubNodes(nodes, clubNodes, gc);
+      comboCalculateClubAttraction(nodes, clubNodes, g);
     }
 
     // 计算位置

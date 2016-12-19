@@ -4,6 +4,9 @@ import { Modal } from 'antd';
 
 import { find, randomColor } from 'utils/utils';
 
+const groupColorList = ['#513AB7', '#00C49F', '#FFBB28', '#FF8441', '#EE3B61',
+  '#FF6590', '#9575DE'];
+
 export default class ForceChartSVG extends PureComponent {
   constructor(props) {
     super(props);
@@ -121,9 +124,9 @@ export default class ForceChartSVG extends PureComponent {
     const { lastTime, width, height, allNodesList, updateClusters, tabModelKey } = this.props;
 
     return nodes.map((node, i) => {
-      const { ox, oy, cx, cy, r, id, group, path, queue, clubNodeNumber } = node;
+      const { ox, oy, cx, cy, r, id, group, path, queue, clubNodeNumber, realGroup } = node;
 
-      let color = node.color || '#6e5398';
+      let color = groupColorList[realGroup] || node.color || '#6e5398';
       let textColor = 'black';
 
       if (isClub) {
@@ -273,6 +276,7 @@ export default class ForceChartSVG extends PureComponent {
         id: `c${i}`,
         path: node.path,
         queue: node.queue,
+        realGroup: node.realGroup,
       };
     });
 

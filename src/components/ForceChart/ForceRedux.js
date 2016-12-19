@@ -8,9 +8,9 @@ const initialState = {
   ca: 1,
   lastTime: 20,
   isUseClub: false,
-  clubNumber: 4,
-  g: 0.81,
-  gc: 4,
+  // clubNumber: 0,
+  g: 60,
+  gc: 20,
   modelValue: null,
   curLink: {},
 }

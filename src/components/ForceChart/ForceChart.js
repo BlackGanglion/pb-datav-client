@@ -35,6 +35,9 @@ class ForceChart extends PureComponent {
     updateClusters: PropTypes.func,
     updateSelectedLink: PropTypes.func,
     changeMapLink: PropTypes.func,
+    isInputCombo: PropTypes.bool,
+    comboUpdate: PropTypes.func,
+    clubNumber: PropTypes.number,
   }
 
   constructor(props) {
@@ -43,6 +46,7 @@ class ForceChart extends PureComponent {
     this.state = {
       svgKey: Math.random(),
       isConfigOpen: false,
+      comboInput: '',
       // 渲染面板显示/隐藏
       // renderAreaOpen: true,
 
@@ -54,7 +58,7 @@ class ForceChart extends PureComponent {
         ca: props.ca,
         lastTime: props.lastTime,
         isUseClub: props.isUseClub,
-        clubNumber: props.clubNumber,
+        // clubNumber: props.clubNumber,
         g: props.g,
         gc: props.gc,
       }
@@ -160,7 +164,8 @@ class ForceChart extends PureComponent {
     const { data, cluster, date, hour, isRender,
       lastTime, kSelectedNodeFn, clubNodes,
       allNodesList, updateClusters, updateSelectedLink,
-      changeMapLink, tabModelKey, kSelectedArea, kSelectedAreaLink } = this.props;
+      changeMapLink, tabModelKey, kSelectedArea, kSelectedAreaLink,
+      isInputCombo, } = this.props;
 
     const { renderAreaOpen } = this.state;
 
@@ -185,6 +190,65 @@ class ForceChart extends PureComponent {
           style={{ display: isRender ? 'block' : 'none' }}
         >
           {tip}
+        </div>
+      );
+    }
+
+    if (!isInputCombo && !_.isEmpty(data)) {
+      const { nodes, links } = data;
+
+      let res = `*Vertices ${nodes.length}\n`;
+
+      const map = {};
+
+      nodes.forEach((node, i) => {
+        res = res + ` ${i + 1} "v${node.id}"\n`;
+        map[node.id] = i + 1;
+      });
+
+      res = res + '*Arcs\n';
+
+      links.forEach((link, i) => {
+        const source = Number(map[link.source]);
+        const target = Number(map[link.target]);
+        const value = Number(link.value);
+        res = res + ` ${source} ${target} ${value}.000000000000000\n`;
+      });
+
+      return (
+        <div
+          className="force-chart"
+          style={{
+            display: isRender ? 'block' : 'none'
+          }}
+        >
+          <div className="combo-input">
+            <div>karate.net</div>
+            <Input
+              type="textarea"
+              rows={10}
+              value={res}
+            />
+            <div>karate_comm_comboC++.txt</div>
+            <Input
+              type="textarea"
+              value={this.state.comboInput}
+              rows={10}
+              placeholder="粘贴karate_comm_comboC++.txt结果"
+              onChange={(e) => {
+                const value = e.target.value;
+                this.setState({
+                  comboInput: value,
+                });
+              }}
+            />
+            <Button
+              type="primary"
+              onClick={() => {
+                this.props.comboUpdate(data, this.state.comboInput);
+              }}
+            >提交</Button>
+          </div>
         </div>
       );
     }
@@ -280,19 +344,19 @@ class ForceChart extends PureComponent {
                 <Radio key="b" value={false}>不使用社团引力</Radio>
               </RadioGroup>
             </div>
-            <div className="right-config-open-item">
+            {/*<div className="right-config-open-item">
               <span>社团中心数量:</span>
               <Input
                 value={this.state.config.clubNumber}
                 placeholder="默认4"
                 onChange={this.changeConfig.bind(this, 'clubNumber')}
               />
-            </div>
+            </div>*/}
             <div className="right-config-open-item">
               <span>社团引力系数:</span>
               <Input
                 value={this.state.config.g}
-                placeholder="默认0.81"
+                placeholder="默认60"
                 onChange={this.changeConfig.bind(this, 'g')}
               />
             </div>
@@ -303,7 +367,7 @@ class ForceChart extends PureComponent {
               <span>社团中心斥力系数:</span>
               <Input
                 value={this.state.config.gc}
-                placeholder="默认4"
+                placeholder="默认20"
                 onChange={this.changeConfig.bind(this, 'gc')}
               />
             </div>

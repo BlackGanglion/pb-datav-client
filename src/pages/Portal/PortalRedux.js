@@ -46,9 +46,12 @@ const initialState = {
   selectedClusters: [],
   // 共用
   nodeLinkData: {},
+  // combo配置导入
+  isInputCombo: false,
   researchClusters: [],
   // 区域间研究模式, k为K-means，p为上方高亮区域
   researchModel: null,
+  clubNumber: 0,
 
   // 飞线
   startSelectedDate: null,
@@ -397,6 +400,35 @@ const joinSelectNodes = () => {
   }
 }
 
+const COMBO_UPDATE = ACTION_PREFIX + 'COMBO_UPDATE';
+
+const comboUpdate = (data, combo) => {
+  const nums = combo.split('\n');
+
+  let clubNumber = -1;
+
+  nums.forEach((num) => {
+    if (Number(num) > clubNumber) clubNumber = num;
+  });
+
+  return {
+    type: COMBO_UPDATE,
+    payload: {
+      isInputCombo: true,
+      nodeLinkData: {
+        nodes: data.nodes.map((node, i) => {
+          return {
+            ...node,
+            realGroup: Number(nums[i]),
+          }
+        }),
+        links: data.links,
+      },
+      clubNumber: Number(clubNumber) + 1,
+    }
+  }
+}
+
 export const actions = {
   getAllNodesList,
   openLoading,
@@ -428,6 +460,7 @@ export const actions = {
   deleteSelectedNode,
   deleteSelectedNodes,
   joinSelectNodes,
+  comboUpdate,
 };
 
 function PortalReducer(state = initialState, action) {
@@ -550,6 +583,7 @@ function PortalReducer(state = initialState, action) {
       return {
         ...state,
         nodeLinkData: [],
+        isInputCombo: false,
       }
     }
     case GET_NODE_LINK_SUCCESS: {
@@ -620,6 +654,7 @@ function PortalReducer(state = initialState, action) {
         selectedCluster: {},
         researchClusters: [],
         nodeLinkData: {},
+        isInputCombo: false,
       }
     }
     case UPDATE_SELECT_LINK: {
@@ -634,6 +669,12 @@ function PortalReducer(state = initialState, action) {
         ...state,
         researchClusters,
         researchModel,
+      }
+    }
+    case CAL_CLUSTERS_DIS: {
+      return {
+        ...state,
+        isInputCombo: false,
       }
     }
     case CAL_CLUSTERS_DIS_SUCCESS: {
@@ -696,6 +737,14 @@ function PortalReducer(state = initialState, action) {
       return {
         ...state,
         nodes: [],
+      }
+    }
+    case COMBO_UPDATE: {
+      return {
+        ...state,
+        nodeLinkData: payload.nodeLinkData,
+        isInputCombo: payload.isInputCombo,
+        clubNumber: payload.clubNumber,
       }
     }
     default:
