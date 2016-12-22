@@ -302,7 +302,7 @@ class Portal extends Component {
     this.props.updateCluster(index, {
       ...cluster,
       selected: true,
-      selectedHandler: showArea(this.map, cluster, kSelectedNodeFn),
+      selectedHandler: showArea(this.map, cluster),
     });
   }
 
@@ -862,21 +862,23 @@ class Portal extends Component {
     showLink(this.map, sourceNode, targetNode);
   }
 
-  kSelectedArea(id) {
+  kSelectedArea(id, i) {
     const { researchModel, kAreaResult, clusters } = this.props;
 
+    /*
     if (this.researchArea) {
       clearArea(this.map, this.researchArea);
       this.researchArea = null;
     }
+    */
 
     if (researchModel === 'k') {
-      this.researchArea = showArea(this.map, kAreaResult[id]);
+      this.researchArea = showArea(this.map, kAreaResult[id], false, i);
     }
 
     if (researchModel === 'p') {
       const selectedArea = _.find(clusters, { id, });
-      this.researchArea = showArea(this.map, selectedArea);
+      this.researchArea = showArea(this.map, selectedArea, false, i);
     }
   }
 

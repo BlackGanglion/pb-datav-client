@@ -565,18 +565,21 @@ function PortalReducer(state = initialState, action) {
       return {
         ...state,
         selectedDate: payload,
+        isInputCombo: false,
       }
     }
     case UPDATE_SELECTED_HOUR: {
       return {
         ...state,
         selectedHour: payload,
+        isInputCombo: false,
       }
     }
     case SELECTED_CLUSTER_FN: {
       return {
         ...state,
         selectedCluster: state.clusters[payload],
+        isInputCombo: false,
       }
     }
     case GET_NODE_LINK: {

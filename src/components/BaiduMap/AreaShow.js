@@ -6,6 +6,9 @@ import ch from 'convexhull-js';
 
 import _ from 'lodash';
 
+const groupColorList = ['#513AB7', '#00C49F', '#FFBB28', '#FF8441', '#EE3B61',
+  '#FF6590', '#9575DE'];
+
 let _link = null;
 let _label = null;
 
@@ -55,7 +58,7 @@ ComplexCustomOverlay.prototype.draw = function(){
 }
 
 // 区域范围，渲染点
-function showArea(map, cluster, kSelectedNodeFn) {
+function showArea(map, cluster, isShowNodes = true, index) {
   const { color } = cluster;
 
   const markers = [];
@@ -63,6 +66,7 @@ function showArea(map, cluster, kSelectedNodeFn) {
   let averageX = 0;
   let averageY = 0;
   const count = cluster.nodeList.length;
+  const fillColor = cluster.color;
 
   const nodeList = cluster.nodeList.map((e) => {
     const myCompOverlay = new ComplexCustomOverlay(
@@ -74,9 +78,10 @@ function showArea(map, cluster, kSelectedNodeFn) {
     averageX = averageX + (e.x / count);
     averageY = averageY + (e.y / count);
 
-    markers.push(myCompOverlay);
-
-    map.addOverlay(myCompOverlay);
+    if (isShowNodes) {
+      markers.push(myCompOverlay);
+      map.addOverlay(myCompOverlay);
+    }
 
     return {
       x: e.x,
@@ -89,13 +94,25 @@ function showArea(map, cluster, kSelectedNodeFn) {
     return Point;
   });
 
-  const polygon = new BMap.Polygon(hullPoints,
-    {
-      strokeColor: color,
-      strokeWeight: 2,
-      strokeStyle: 'dashed',
-      fillOpacity: 0,
-    });
+  let polygon;
+  if (isShowNodes) {
+    polygon = new BMap.Polygon(hullPoints,
+      {
+        strokeColor: color,
+        strokeWeight: 2,
+        strokeStyle: 'dashed',
+        fillOpacity: 0,
+      });
+  } else {
+    polygon = new BMap.Polygon(hullPoints,
+      {
+        strokeColor: groupColorList[index],
+        strokeWeight: 2,
+        strokeStyle: 'soild',
+        fillOpacity: 0,
+        fillColor: groupColorList[index],
+      });
+  }
 
   map.addOverlay(polygon);
 

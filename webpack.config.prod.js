@@ -77,6 +77,9 @@ module.exports = {
       disable: false,
       allChunks: true,
     }),
+    new webpack.LoaderOptionsPlugin({
+      minimize: true
+    }),
     new webpack.NoErrorsPlugin(),
     new webpack.ContextReplacementPlugin(/moment[\/\\]locale$/, /en-gb|zh-cn/),
   ],

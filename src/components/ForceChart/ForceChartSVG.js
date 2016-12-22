@@ -190,7 +190,7 @@ export default class ForceChartSVG extends PureComponent {
               }
               if (tabModelKey === "2") {
                 // K聚类区域(index)，与普通聚类(_find id)有区别
-                this.props.kSelectedArea(id);
+                this.props.kSelectedArea(id, realGroup);
               }
             }}
             style={{

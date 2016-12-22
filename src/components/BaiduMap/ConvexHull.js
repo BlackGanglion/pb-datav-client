@@ -86,15 +86,15 @@ export default function (map, areaPolygon, clusters, updateClusters) {
     */
 
     const hLine = new BMap.Polyline([
-        new BMap.Point(centroid.x - 0.005, centroid.y),
-        new BMap.Point(centroid.x + 0.005, centroid.y),
+        new BMap.Point(centroid.x - 0.001, centroid.y),
+        new BMap.Point(centroid.x + 0.001, centroid.y),
       ],
       { strokeColor: "red", strokeWeight: 10, strokeOpacity: 0.5, cursor: 'pointer' }
     );
 
     const sLine = new BMap.Polyline([
-        new BMap.Point(centroid.x, centroid.y - 0.005),
-        new BMap.Point(centroid.x, centroid.y + 0.005),
+        new BMap.Point(centroid.x, centroid.y - 0.001),
+        new BMap.Point(centroid.x, centroid.y + 0.001),
       ],
       { strokeColor: "red", strokeWeight: 10, strokeOpacity: 0.5, cursor: 'pointer' }
     );
