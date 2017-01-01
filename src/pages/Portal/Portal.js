@@ -2,7 +2,6 @@ import React, { Component, PropTypes } from 'react';
 import { actions } from './PortalRedux';
 import { connect } from 'react-redux';
 import _ from 'lodash';
-import Events from 'oui-dom-events';
 import moment from 'moment';
 
 import { Menu, Icon, Spin, Input,
@@ -20,7 +19,7 @@ const DEFAULT_Y = 30.2428426084585;
 import markersCluster from 'components/BaiduMap/MarkersCluster';
 import pointsCluster from 'components/BaiduMap/PointsCluster';
 import circleLocalSearch, { clearCircle } from 'components/BaiduMap/Circle';
-import convexHull, { clearAreaPolygon } from 'components/BaiduMap/ConvexHull'
+import convexHull, { clearAreaPolygon, convexHullNodes, clearAreaPolygonNodes } from 'components/BaiduMap/ConvexHull'
 import Kcluster from 'components/Kcluster/Kcluster';
 import ForceChart from 'components/ForceChart/ForceChart';
 import AreaLine from 'components/AreaLine/AreaLine';
@@ -123,31 +122,18 @@ class Portal extends Component {
     this.selectedNodes = [];
   }
 
-  handleReheight() {
-    const height = document.documentElement.clientHeight;
-
-    this.setState({
-      height,
-    });
-  }
-
   componentDidMount() {
     // 请求所有站点
     this.props.getAllNodesList();
-
-    // 调整Map高度
-    this.handleReheightFn = _.throttle(this.handleReheight.bind(this), 120);
-    Events.on(window, 'resize', this.handleReheightFn);
   }
 
   componentWillUnmount() {
-    Events.off(window, 'resize', this.handleReheightFn);
-    this.handleReheightFn = null;
     this.map = null;
     this.pointCollection = null;
     this.markersCluster = null;
     // K-means显示
     this.areaPolygon = null;
+    this.areaPolygonNodes = null;
     // 区域间研究时区域显示
     this.researchArea = null;
     this.researchAreaLink = null;
@@ -188,76 +174,6 @@ class Portal extends Component {
     const { key } = e;
 
     this.props.changeSelectKeys(key);
-  }
-
-  renderPortalInfo() {
-    const { selectedKeys, kSelectedNode, nodes, allNodesList } = this.props;
-    if (_.isEmpty(kSelectedNode)) return null;
-
-    if (_.isObject(kSelectedNode) && kSelectedNode.relations) {
-      const { relations, source, target, value } = kSelectedNode;
-
-      relations.sort((a, b) => {
-        return Number(a.hour) - Number(b.hour);
-      });
-
-      const relationItems = relations.map((relation, i) => {
-        const { hour, source, target, value } = relation;
-        return <div key={i}>{`${hour}时 ${source}->${target} 流量:${value}`}</div>
-      });
-
-      const sourceNode = _.find(allNodesList, { id: Number(source) });
-      const targetNode = _.find(allNodesList, { id: Number(target) });
-
-      return (
-        <div className="link-info">
-          <div>
-            <strong>{`${sourceNode.name}(${source}) 与 ${targetNode.name}(${target}) 间`}</strong>(<span>{` 车流量( ${value} )`}</span>)
-          </div>
-          <div>
-            {relationItems}
-          </div>
-        </div>
-      );
-    }
-
-    const { id, x, y, name, rx, ry, address, servicetime } = kSelectedNode;
-
-    const disabled = !(_.find(nodes, { id, }) === undefined);
-
-    return (<div className="station-info">
-      <Button
-        className="station-info-add"
-        type="primary"
-        disabled={disabled}
-        onClick={() => {
-          this.props.addSelectedNode(kSelectedNode);
-
-          // 映射到地图上
-          this.selectedNodes.push({
-            id,
-            handler: showNodes(this.map, kSelectedNode),
-          });
-        }}
-      >选择</Button>
-      <div className="im">
-        <strong>{`${id}: ${name}`}</strong>
-      </div>
-      <div>
-        <strong>实际地理坐标:</strong>
-      </div>
-      <div>{`(${rx}, ${ry})`}</div>
-      <div>
-        <strong>百度地理坐标</strong>
-      </div>
-      <div>{`(${x}, ${y})`}</div>
-      <div>
-        <strong>地址:</strong> {`${address}`}
-      </div>
-      <div>
-        <strong>服务时间:</strong>{`${servicetime}`}
-      </div>
-    </div>);
   }
 
   changePercent(delay) {
@@ -413,7 +329,7 @@ class Portal extends Component {
   renderPortalControl() {
     const { selectedKeys, clusterCount, clusterStatus,
       selectedDate, selectedHour, allStaMethod,
-      isShowKResult, kAreaResult,
+      isShowKResult, kAreaResult, isShowSResult,
       tabModelKey, clusters, isShowtexts, forceUpdate } = this.props;
 
     const options = [];
@@ -441,45 +357,59 @@ class Portal extends Component {
       );
     });
 
-    if (selectedKeys[0] === 'map') {
-      return (
+    return (
+      <div>
         <div className="portal-control-map">
+          <div className="portal-control-map-title">全局站点</div>
           <div className="portal-control-map-item">
             <Button
               type="primary"
-              disabled={allStaMethod === 'scatter'}
               onClick={() => {
-                this.props.changeAllStaMethod('scatter');
+                if (allStaMethod === 'scatter') {
+                  this.props.changeAllStaMethod('noMethod');
+                }
+                if (allStaMethod === 'noMethod') {
+                  this.props.changeAllStaMethod('scatter');
+                }
                 setTimeout(() => {
                   this.props.closeLoading();
                 }, 0);
               }}
-            >散点模式</Button>
+            >
+              {allStaMethod === 'scatter' ? '隐藏所有站点' : '显示所有站点'}
+            </Button>
           </div>
           <div className="portal-control-map-item">
             <Button
               type="primary"
-              disabled={allStaMethod === 'cluster'}
               onClick={() => {
-                this.props.changeAllStaMethod('cluster');
-                setTimeout(() => {
-                  this.props.closeLoading();
-                }, 0);
+                clearCircle(this.map);
               }}
-            >聚类模式</Button>
+            >清除当前区域圈画</Button>
           </div>
-          <div className="portal-control-map-item">
-            <Button
-              type="primary"
-              disabled={allStaMethod === 'noMethod'}
-              onClick={() => {
-                this.props.changeAllStaMethod('noMethod');
-                setTimeout(() => {
-                  this.props.closeLoading();
-                }, 0);
-              }}
-            >无模式</Button>
-          </div>
+        </div>
+        <div className="portal-control-cluster">
+          <div className="portal-control-cluster-title">K-means</div>
+          <span>请输入区域个数: </span>
+          <Input
+            style={{ width: '100px' }}
+            value={clusterCount}
+            disabled={clusterStatus === 'loading'}
+            onChange={(e) => {
+              this.props.changeClusterCount(e.target.value);
+            }}
+          />
+          <Button
+            type="primary"
+            loading={clusterStatus === 'loading'}
+            onClick={() => {
+              clearAreaPolygon(this.map, this.areaPolygon);
+              this.areaPolygon = null;
+              clearAreaPolygonNodes(this.map, this.areaPolygonNodes);
+              this.areaPolygonNodes = null;
+              this.props.changeClusterStatus('loading');
+            }}
+          >开始聚类</Button>
           <div className="portal-control-map-item">
             {kAreaResult && kAreaResult.length ? <Button
               type="primary"
@@ -497,19 +427,30 @@ class Portal extends Component {
                 );
                 return this.props.changeIsShowKResult(true);
               }}
-            >{!isShowKResult ? '显示K-means划分结果' : '隐藏K-means划分结果'}</Button> : null}
+            >{!isShowKResult ? '显示区域凸包划分结果' : '隐藏区域凸包划分结果'}</Button> : null}
           </div>
           <div className="portal-control-map-item">
-            <Button
+            {kAreaResult && kAreaResult.length ? <Button
               type="primary"
               onClick={() => {
-                clearCircle(this.map);
+                if (isShowSResult) {
+                  clearAreaPolygonNodes(this.map, this.areaPolygonNodes);
+                  this.areaPolygonNodes = null;
+                  return this.props.changeIsShowSResult(false);
+                }
+                this.areaPolygonNodes = convexHullNodes(
+                  this.map,
+                  this.areaPolygon,
+                  kAreaResult,
+                );
+                return this.props.changeIsShowSResult(true);
               }}
-            >清除当前圈画</Button>
+            >{!isShowSResult ? '显示散点颜色划分结果' : '隐藏散点颜色划分结果'}</Button> : null}
           </div>
         </div>
-      );
-    }
+      </div>
+    );
+    /*
     if (selectedKeys[0] === 'kCluster') {
       return (
         <div className="portal-control-cluster">
@@ -845,8 +786,7 @@ class Portal extends Component {
           </div>
       </div>);
     }
-
-    return null;
+    */
   }
 
   handleUpdateConvexHull(clusters) {
@@ -922,8 +862,6 @@ class Portal extends Component {
   }
 
   render() {
-    const { height, isShowPanel } = this.state;
-
     const { selectedKeys, isLoadingAllNodes, isLoadingMap,
       clusterCount, allNodesList, clusterStatus, isClusterZoom,
       changeIsZoom, kSelectedNode,
@@ -940,40 +878,15 @@ class Portal extends Component {
         tip={loadingTip}
         spinning={isLoadingAllNodes || isLoadingMap}
       >
-        <div className="portal-main" style={{ height }}>
-          <div className="portal-map" id="allmap"></div>
+        <div className="portal-main">
           <div className="portal-left-list">
-            <div className="portal-meun">
-              <Menu
-                mode="inline"
-                selectedKeys={selectedKeys}
-                style={{ width: 240 }}
-                onClick={::this.handleMeunClick}
-              >
-                <Menu.Item key="map">
-                  <i className="icon icon-map"/>全局 - 站点底图
-                </Menu.Item>
-                <Menu.Item key="kCluster">
-                  <i className="icon icon-k"/>全局 - 站点K-means区域
-                </Menu.Item>
-                <Menu.Item key="force">
-                  <i className="icon icon-force"/>区域 - 力引导布局
-                </Menu.Item>
-                <Menu.Item key="areaLine">
-                  <i className="icon icon-line"/>区域 - 区域动态飞线
-                </Menu.Item>
-              </Menu>
-            </div>
             <div className="portal-control">
               <div className="small-title">操作面板</div>
               {this.renderPortalControl()}
             </div>
-            <div className="portal-info">
-              <div className="small-title">信息面板</div>
-              {this.renderPortalInfo()}
-            </div>
           </div>
           <div className="portal-main-list">
+            <div className="portal-map" id="allmap"></div>
             <div className="portal-cluster-main">
               <div className="portal-cluster">
                 {this.renderPortalCluster()}
@@ -981,8 +894,6 @@ class Portal extends Component {
               <i className="icon icon-delete"
                 onClick={(e) => {
                   const { clusters } = this.props;
-
-                  console.log(clusters);
 
                   e.stopPropagation();
                   const self = this;
@@ -998,9 +909,9 @@ class Portal extends Component {
                         self.props.deleteClusters();
                       },
                       onCancel() {},
-                    });
-                  }
-                }}></i>
+                  });
+                }
+              }}></i>
             </div>
             <div className="portal-nodes-main">
               <div className="portal-nodes">
@@ -1047,36 +958,6 @@ class Portal extends Component {
                   }
                 }}></i>
             </div>
-            <Button
-              type="primary"
-              onClick={() => {
-                this.setState({
-                  isShowPanel: !isShowPanel,
-                })
-              }}
-              className="portal-main-list-control"
-            >{isShowPanel ? '隐藏面板' : '显示面板'}</Button>
-            <Kcluster
-              data={allNodesList}
-              count={clusterCount}
-              status={clusterStatus}
-              changeStatus={this.props.changeClusterStatus}
-              isZoom={isClusterZoom}
-              changeIsZoom={this.props.changeIsZoom}
-              kSelectedNode={kSelectedNode}
-              kSelectedNodeFn={this.props.kSelectedNodeFn}
-              updateClusters={this.props.updateClusters}
-              setProgress={this.setProgress.bind(this)}
-              isRender={selectedKeys[0] === 'kCluster' && isShowPanel}
-              updateConvexHull={::this.handleUpdateConvexHull}
-              updateKAreaResult={this.props.updateKAreaResult}
-            >
-             <Progress
-               type="circle"
-               percent={this.state.percent}
-               width={80}
-             />
-            </Kcluster>
             <ForceChart
               data={nodeLinkData}
               date={selectedDate}
@@ -1086,7 +967,7 @@ class Portal extends Component {
               cluster={tabModelKey === "1" ? selectedCluster : researchClusters}
               // 数据请求方法
               requestData={tabModelKey === "1" ? this.props.getNodeLinkData : this.props.calClustersDis}
-              isRender={selectedKeys[0] === 'force' && isShowPanel}
+              isRender
               kSelectedNodeFn={this.props.kSelectedNodeFn}
               updateSelectedLink={this.props.updateSelectedLink}
               changeMapLink={::this.changeMapLink}
@@ -1098,18 +979,21 @@ class Portal extends Component {
               comboUpdate={this.props.comboUpdate}
               clubNumber={this.props.clubNumber}
             />
-            <AreaLine
-              width={900}
-              height={600}
-              cluster={areaLineCluster}
-              isRender={selectedKeys[0] === 'areaLine' && isShowPanel}
-              startSelectedDate={startSelectedDate}
-              startSelectedHour={startSelectedHour}
-              endSelectedDate={endSelectedDate}
-              endSelectedHour={endSelectedHour}
-              isShowtexts={isShowtexts}
-              forceUpdate={forceUpdate}
-            />
+            <Kcluster
+              data={allNodesList}
+              count={clusterCount}
+              status={clusterStatus}
+              changeStatus={this.props.changeClusterStatus}
+              isZoom={isClusterZoom}
+              changeIsZoom={this.props.changeIsZoom}
+              kSelectedNode={kSelectedNode}
+              kSelectedNodeFn={this.props.kSelectedNodeFn}
+              updateClusters={this.props.updateClusters}
+              setProgress={this.setProgress.bind(this)}
+              isRender={false}
+              updateConvexHull={::this.handleUpdateConvexHull}
+              updateKAreaResult={this.props.updateKAreaResult}
+            ></Kcluster>
           </div>
         </div>
       </Spin>

@@ -29,6 +29,7 @@ const initialState = {
   // scatter, cluster
   allStaMethod: 'scatter',
   isShowKResult: true,
+  isShowSResult: false,
 
   // K聚类
   clusterCount: 3,
@@ -313,6 +314,15 @@ const changeIsShowKResult = (isShowKResult) => {
   }
 }
 
+const CHANGE_IS_SHOW_S_RESULT = ACTION_PREFIX + 'CHANGE_IS_SHOW_S_RESULT';
+const changeIsShowSResult = (isShowSResult) => {
+  return {
+    type: CHANGE_IS_SHOW_S_RESULT,
+    payload: isShowSResult,
+  }
+}
+
+
 const CHANGE_FORCE_TAB = ACTION_PREFIX + 'CHANGE_FORCE_TAB';
 const changeForceTab = (key) => {
   return {
@@ -447,6 +457,7 @@ export const actions = {
   changeAllStaMethod,
   updateKAreaResult,
   changeIsShowKResult,
+  changeIsShowSResult,
   updateCluster,
   deleteCluster,
   deleteClusters,
@@ -521,6 +532,8 @@ function PortalReducer(state = initialState, action) {
       return {
         ...state,
         clusterStatus: payload,
+        isShowKResult: true,
+        isShowSResult: false,
       }
     }
     case CHANGE_IS_ZOOM: {
@@ -615,6 +628,12 @@ function PortalReducer(state = initialState, action) {
       return {
         ...state,
         isShowKResult: payload,
+      }
+    }
+    case CHANGE_IS_SHOW_S_RESULT: {
+      return {
+        ...state,
+        isShowSResult: payload,
       }
     }
     case UPDATE_CLUSTER: {

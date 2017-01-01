@@ -25,8 +25,41 @@ function clearAreaPolygon(map, areaPolygon) {
   }
 }
 
+function convexHullNodes(map, areaPolygon, clusters) {
+  return clusters.map((cluster, i) => {
+    const { color, nodeList } = cluster;
+
+    const points = [];
+
+    nodeList.forEach((node) => {
+      points.push(new BMap.Point(node.x, node.y));
+    });
+
+    const options = {
+      size: BMAP_POINT_SIZE_SMALL,
+      shape: BMAP_POINT_SHAPE_CIRCLE,
+      color,
+    }
+    const pointCollection = new BMap.PointCollection(points, options);
+
+    map.addOverlay(pointCollection);
+
+    return pointCollection;
+  });
+}
+
+function clearAreaPolygonNodes(map, areaPolygonNodes) {
+  if (areaPolygonNodes && areaPolygonNodes.length) {
+    areaPolygonNodes.forEach((area) => {
+      map.removeOverlay(area);
+    });
+  }
+}
+
 export {
+  convexHullNodes,
   clearAreaPolygon,
+  clearAreaPolygonNodes,
 }
 
 export default function (map, areaPolygon, clusters, updateClusters) {

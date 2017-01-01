@@ -1,7 +1,7 @@
 @import 'variables';
 
 .force-chart-empty {
-  width: 910px;
+  width: 700px;
   height: 595px;
   padding: 20px;
   background-color: $background-primary;
@@ -10,13 +10,15 @@
   color: #6e5398;
   font-size: 18px;
   text-align: center;
+  margin-bottom: 20px;
 }
 
 .force-chart {
   background-color: $background-primary;
   position: relative;
+  margin-bottom: 20px;
   .combo-input {
-    width: 900px;
+    width: 700px;
     height: 600px;
   }
   .force-chart-main {

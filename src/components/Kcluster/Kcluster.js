@@ -43,6 +43,8 @@ class Kcluster extends Component {
   }
 
   initAxis(data) {
+    return null;
+
     this.cluster = d3.select('.cluster');
 
     const xMin = d3.min(data, (d) => { return d.x; }) - 0.01;
@@ -73,6 +75,8 @@ class Kcluster extends Component {
   }
 
   initNode() {
+    return null;
+
     this.cluster.selectAll("circle").remove();
     this.cluster.selectAll("rect").remove();
 
@@ -115,7 +119,7 @@ class Kcluster extends Component {
   }
 
   initCenter() {
-    this.cluster.selectAll("rect").remove();
+    // this.cluster.selectAll("rect").remove();
 
     const { data, count: k } = this.props;
 
@@ -139,6 +143,8 @@ class Kcluster extends Component {
         });
       }
     }
+
+    return null;
 
     this.viewCenter = this.cluster
       .selectAll(".circle")
@@ -182,6 +188,8 @@ class Kcluster extends Component {
     const { data, count: k } = this.props;
 
     const edge = (-(0.1 * k) + 20) > 5 ? (-(0.1 * k) + 20) : 5;
+
+    return null;
 
     this.cluster.select(`.cluster${i}`)
       .transition()
@@ -233,7 +241,7 @@ class Kcluster extends Component {
         if(cluster != clusterAssment[i]) {
           clusterChanged = true;
           clusterAssment[i] = cluster;
-          this.changeCluster(data[i].id, cluster);
+          // this.changeCluster(data[i].id, cluster);
         }
       }
 
@@ -286,6 +294,8 @@ class Kcluster extends Component {
   }
 
   handleZoom() {
+    return null;
+
     this.zoom = d3.zoom()
       .scaleExtent([1, 40])
       .translateExtent([[-100, -100], [width + 90, height + 100]])
@@ -327,18 +337,13 @@ class Kcluster extends Component {
       this.handleZoom();
       const clusters = this.kmeans();
 
-      // 进度圈
-      this.props.setProgress(this.delay);
-
       // 更新K聚类结果
       this.props.updateKAreaResult(clusters);
 
       // 自动映射到底图
       this.props.updateConvexHull(clusters);
 
-      setTimeout(() => {
-        this.props.changeStatus('success');
-      }, this.delay + 1000);
+      this.props.changeStatus('success');
     }
   }
 

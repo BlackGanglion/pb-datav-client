@@ -2,20 +2,31 @@
 
 .portal-main {
   position: relative;
-  .portal-map {
-    width: 100%;
-    height: 100%;
+  background-color: #eee;
+  &:before,
+  &:after {
+    content: " "; // 1
+    display: table; // 2
+  }
+  &:after {
+    clear: both;
   }
   .portal-left-list {
-    position: absolute;
-    top: 10px;
-    left: 64px;
+    float: left;
+    margin-top: 10px;
+    margin-left: 50px;
     width: 280px;
   }
   .portal-main-list {
-    position: absolute;
-    top: 10px;
-    left: 360px;
+    float: left;
+    margin-top: 10px;
+    margin-left: 10px;
+    width: 700px;
+    .portal-map {
+      width: 700px;
+      height: 600px;
+      margin-top: 10px;
+    }
     .portal-main-list-control {
       position: absolute;
       top: 40px;
@@ -32,9 +43,11 @@
     .portal-cluster-main {
       width: 700px;
       position: relative;
+      margin: 10px 0;
+      border-radius: 5px;
       .portal-cluster {
         background-color: $background-primary;
-        height: 34px;
+        height: 52px;
         width: 700px;
         overflow-x: scroll;
         padding-bottom: 8px;
@@ -65,9 +78,11 @@
     .portal-nodes-main {
       width: 700px;
       position: relative;
+      margin: 10px 0;
+      border-radius: 5px;
       .portal-nodes {
         background-color: $background-primary;
-        height: 34px;
+        height: 52px;
         width: 700px;
         padding-bottom: 8px;
         overflow-x: scroll;
@@ -144,12 +159,28 @@
       }
     }
     .portal-control-map {
+      padding: 5px 0;
+      border-top: 1px solid #eee;
+      border-bottom: 1px solid #eee;
+      .portal-control-map-title {
+        text-align: left;
+        font-weight: bold;
+      }
       .portal-control-map-item {
         margin: 4px;
       }
       .ant-btn {
         display: inline-block;
         margin: 0px 4px;
+      }
+    }
+    .portal-control-cluster {
+      padding: 5px 0;
+      border-top: 1px solid #eee;
+      border-bottom: 1px solid #eee;
+      .portal-control-cluster-title {
+        text-align: left;
+        font-weight: bold;
       }
     }
   }
