@@ -24,6 +24,7 @@ const initialState = {
   nodes: [],
   // 区域自增id
   id: 0,
+  isStartSelectNodes: false,
 
   // 站点底图
   // scatter, cluster
@@ -439,6 +440,14 @@ const comboUpdate = (data, combo) => {
   }
 }
 
+const CHANGE_START_SELECT_NODES = ACTION_PREFIX + 'CHANGE_START_SELECT_NODES';
+const changeStartSelectNodes = (isStartSelectNodes) => {
+  return {
+    type: CHANGE_START_SELECT_NODES,
+    payload: isStartSelectNodes,
+  }
+}
+
 export const actions = {
   getAllNodesList,
   openLoading,
@@ -466,6 +475,7 @@ export const actions = {
   getResearchClusters,
   updateAreaLineConfig,
   changeTextsShow,
+  changeStartSelectNodes,
 
   addSelectedNode,
   deleteSelectedNode,
@@ -767,6 +777,12 @@ function PortalReducer(state = initialState, action) {
         nodeLinkData: payload.nodeLinkData,
         isInputCombo: payload.isInputCombo,
         clubNumber: payload.clubNumber,
+      }
+    }
+    case CHANGE_START_SELECT_NODES: {
+      return {
+        ...state,
+        isStartSelectNodes: payload
       }
     }
     default:

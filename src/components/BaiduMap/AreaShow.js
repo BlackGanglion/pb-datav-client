@@ -6,8 +6,8 @@ import ch from 'convexhull-js';
 
 import _ from 'lodash';
 
-const groupColorList = ['#513AB7', '#00C49F', '#FFBB28', '#FF8441', '#EE3B61',
-  '#FF6590', '#9575DE'];
+const groupColorList = ['#00C49F', '#FFBB28', '#FF8441', '#EE3B61',
+  '#FF6590', '#9575DE', '#513AB7'];
 
 let _link = null;
 let _label = null;
@@ -67,20 +67,22 @@ function showArea(map, cluster, isShowNodes = true, index) {
   let averageY = 0;
   const count = cluster.nodeList.length;
   const fillColor = cluster.color;
+  const points = [];
 
   const nodeList = cluster.nodeList.map((e) => {
+    /*
     const myCompOverlay = new ComplexCustomOverlay(
       map,
       new BMap.Point(e.x, e.y),
       `${e.id}`,
     );
+    */
 
     averageX = averageX + (e.x / count);
     averageY = averageY + (e.y / count);
 
     if (isShowNodes) {
-      markers.push(myCompOverlay);
-      map.addOverlay(myCompOverlay);
+      points.push(new BMap.Point(e.x, e.y));
     }
 
     return {
@@ -88,6 +90,17 @@ function showArea(map, cluster, isShowNodes = true, index) {
       y: e.y,
     };
   });
+
+  let pointCollection = null;
+  if (isShowNodes) {
+    const options = {
+      size: BMAP_POINT_SIZE_SMALL,
+      shape: BMAP_POINT_SHAPE_CIRCLE,
+      color: fillColor,
+    }
+    pointCollection = new BMap.PointCollection(points, options);
+    map.addOverlay(pointCollection);
+  }
 
   const hullPoints = ch(nodeList).map((point) => {
     const Point = new BMap.Point(point.x, point.y);
@@ -116,11 +129,11 @@ function showArea(map, cluster, isShowNodes = true, index) {
 
   map.addOverlay(polygon);
 
-  map.centerAndZoom(new BMap.Point(averageX, averageY), 17);
+  map.centerAndZoom(new BMap.Point(averageX, averageY), 15);
 
   return {
     polygon,
-    markers,
+    markers: pointCollection,
   }
 }
 
@@ -129,11 +142,7 @@ function clearArea(map, selectedHandler) {
     const { polygon, markers } = selectedHandler;
 
     if (polygon) map.removeOverlay(polygon);
-    if (markers && markers.length) {
-      markers.forEach((marker) => {
-        map.removeOverlay(marker);
-      });
-    }
+    if (markers) map.removeOverlay(markers);
   }
 }
 
@@ -144,7 +153,7 @@ function showLink(map, source, target) {
   const pointB = new BMap.Point(target.bx, target.by);
 
   const polyline = new BMap.Polyline([pointA, pointB],
-    { strokeColor: "blue", strokeWeight: 6, strokeOpacity: 0.5 }
+    { strokeColor: "red", strokeWeight: 6, strokeOpacity: 0.5 }
   );
 
   const opts = {
@@ -155,6 +164,7 @@ function showLink(map, source, target) {
   }
 
   // 创建文本标注对象
+  /*
   let label = new BMap.Label(
     `实际地理直线距离为${map.getDistance(pointA, pointB).toFixed(2)}米`,
     opts
@@ -168,11 +178,12 @@ function showLink(map, source, target) {
     fontFamily:"微软雅黑",
     zIndex: 10,
   });
+  */
 
   _link = polyline;
-  _label = label;
+  // _label = label;
 
-  map.addOverlay(label);
+  // map.addOverlay(label);
   map.addOverlay(polyline);
 }
 
@@ -242,6 +253,47 @@ function clearNode(map, nodes, id) {
   }
 }
 
+function showForceMapNode(map, nodes, num) {
+  console.log(num);
+
+  const pointsList = [];
+  for(let i = 0; i < num; i++) {
+    pointsList.push(new Array());
+  }
+
+  nodes.forEach((node) => {
+    const { realGroup } = node;
+    console.log(realGroup);
+    pointsList[realGroup].push(node);
+  });
+
+  return pointsList.map((points, i) => {
+    const pointss = points.map((point) => {
+      const { bx, by } = point;
+
+      return new BMap.Point(bx, by);
+    });
+
+    const options = {
+      size: BMAP_POINT_SIZE_BIG,
+      shape: BMAP_POINT_SHAPE_CIRCLE,
+      color: groupColorList[i],
+    }
+    const pointCollection = new BMap.PointCollection(pointss, options);
+    map.addOverlay(pointCollection);
+
+    return pointCollection;
+  });
+}
+
+function clearForceMapNode(map, nodes) {
+  if (nodes && nodes.length) {
+    nodes.forEach((node) => {
+      map.removeOverlay(node);
+    });
+  }
+}
+
 export {
   showArea,
   clearArea,
@@ -252,5 +304,7 @@ export {
   showNodes,
   clearNodes,
   clearNode,
+  showForceMapNode,
+  clearForceMapNode,
 }
 

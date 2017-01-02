@@ -98,7 +98,8 @@ export default function (map, areaPolygon, clusters, updateClusters) {
       {
         strokeColor: color,
         strokeWeight: 4,
-      });
+      }
+    );
 
     /*
     const pt = new BMap.Point(centroid.x, centroid.y);

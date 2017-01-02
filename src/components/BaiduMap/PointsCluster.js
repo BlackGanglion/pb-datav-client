@@ -37,6 +37,10 @@ export default function(map, nodes, kSelectedNodeFn) {
                 <td class="table-address">地址：&nbsp;</td>
                 <td style="line-height:16px">${id}-${name}&nbsp;</td>
               </tr>
+              <tr>
+                <td class="table-address">坐标：&nbsp;</td>
+                <td style="line-height:16px">(${x}, ${y})&nbsp;</td>
+              </tr>
             </tbody>
           </table>
         </div>

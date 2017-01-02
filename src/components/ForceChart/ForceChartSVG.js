@@ -4,8 +4,8 @@ import { Modal } from 'antd';
 
 import { find, randomColor } from 'utils/utils';
 
-const groupColorList = ['#513AB7', '#00C49F', '#FFBB28', '#FF8441', '#EE3B61',
-  '#FF6590', '#9575DE'];
+const groupColorList = ['#00C49F', '#FFBB28', '#FF8441', '#EE3B61',
+  '#FF6590', '#9575DE', '#513AB7'];
 
 export default class ForceChartSVG extends PureComponent {
   constructor(props) {
@@ -68,7 +68,7 @@ export default class ForceChartSVG extends PureComponent {
           }}
           onClick={() => {
             if(tabModelKey === "1") {
-              this.props.updateSelectedLink(link);
+              // this.props.updateSelectedLink(link);
               this.props.changeMapLink({
                 sourceNode,
                 targetNode,

@@ -12,8 +12,8 @@ import ForceChartSVG from './ForceChartSVG';
 
 import './ForceChart.scss';
 
-const width = 910;
-const height = 595;
+const width = 700;
+const height = 600;
 
 @connect((state, ownProps) => {
   return {
@@ -246,6 +246,35 @@ class ForceChart extends PureComponent {
               type="primary"
               onClick={() => {
                 this.props.comboUpdate(data, this.state.comboInput);
+
+                // 地图映射
+                const { nodes, links } = data;
+                const nums = this.state.comboInput.split('\n');
+
+                console.log(nums);
+
+                let count = 0;
+                const map = {};
+
+                nums.forEach((num) => {
+                  if (map[num]) {
+                    map[num]++;
+                  } else {
+                    map[num] = 1;
+                    count++;
+                  }
+                });
+
+                this.props.forceMapShow({
+                  nodes: nodes.map((node, i) => {
+                    return {
+                      ...node,
+                      realGroup: Number(nums[i]),
+                    }
+                  }),
+                  links,
+                  num: count,
+                });
               }}
             >提交</Button>
           </div>
