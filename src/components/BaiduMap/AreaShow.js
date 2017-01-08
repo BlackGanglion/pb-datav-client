@@ -129,7 +129,8 @@ function showArea(map, cluster, isShowNodes = true, index) {
 
   map.addOverlay(polygon);
 
-  map.centerAndZoom(new BMap.Point(averageX, averageY), 15);
+  map.centerAndZoom(new BMap.Point(averageX, averageY), map.getZoom());
+  // map.setCenter(new BMap.Point(averageX, averageY));
 
   return {
     polygon,
@@ -199,18 +200,52 @@ function clearLink(map) {
 }
 
 function showAreaLink(map, relations, allNodesList) {
+  // 归一化
+  let max = -1;
+  let min = Number.MAX_SAFE_INTEGER;
+  relations.forEach((relation, i) => {
+    const { value } = relation;
+    if (max < Number(value)) { max = Number(value); }
+    if (min > Number(value)) { min = Number(value); }
+  });
+
   return relations.map((relation) => {
     const { source, target, value } = relation;
 
+    const strokeOpacity = ((value - min) / (max - min)) + 0.05;
+    const strokeWeight = strokeOpacity * 5;
+
     const sourceItem = _.find(allNodesList, { id: Number(source) });
-    const targetitem = _.find(allNodesList, { id: Number(target) });
+    const targetItem = _.find(allNodesList, { id: Number(target) });
 
     const pointA = new BMap.Point(sourceItem.x, sourceItem.y);
-    const pointB = new BMap.Point(targetitem.x, targetitem.y);
+    const pointB = new BMap.Point(targetItem.x, targetItem.y);
+
+    const midX = ((Number(sourceItem.x) + Number(targetItem.x)) / 2).toFixed(6);
+    const midY = ((Number(sourceItem.y) + Number(targetItem.y)) / 2).toFixed(6);
+
+    const middlePoint = new BMap.Point()
 
     const polyline = new BMap.Polyline([pointA, pointB],
-      { strokeColor: "blue", strokeWeight: value / 2, strokeOpacity: 0.5 }
+      { strokeColor: "blue", strokeWeight, strokeOpacity, }
     );
+
+    polyline.addEventListener('mouseover', function(e) {
+      const content = `
+        <div class="info-window">
+          <div class="BMap_bubble_title">
+            <p class="title-name" title="${name}">
+              ${sourceItem.name}(${sourceItem.id}) - ${targetItem.name}(${targetItem.id}) [${value}]
+            </p>
+          </div>
+        </div>
+      `;
+
+      const infowindow = new BMap.InfoWindow(content);
+
+      // map.openInfoWindow(infowindow, new BMap.Point(midX, midY));
+      map.openInfoWindow(infowindow, e.point);
+    });
 
     map.addOverlay(polyline);
 
@@ -254,8 +289,6 @@ function clearNode(map, nodes, id) {
 }
 
 function showForceMapNode(map, nodes, num) {
-  console.log(num);
-
   const pointsList = [];
   for(let i = 0; i < num; i++) {
     pointsList.push(new Array());
@@ -263,15 +296,22 @@ function showForceMapNode(map, nodes, num) {
 
   nodes.forEach((node) => {
     const { realGroup } = node;
-    console.log(realGroup);
     pointsList[realGroup].push(node);
   });
 
   return pointsList.map((points, i) => {
     const pointss = points.map((point) => {
-      const { bx, by } = point;
+      const { bx, by, id, name } = point;
 
-      return new BMap.Point(bx, by);
+      const pt = new BMap.Point(bx, by);
+
+      return {
+        ...pt,
+        bx,
+        by,
+        id,
+        name,
+      }
     });
 
     const options = {
@@ -279,7 +319,41 @@ function showForceMapNode(map, nodes, num) {
       shape: BMAP_POINT_SHAPE_CIRCLE,
       color: groupColorList[i],
     }
+
     const pointCollection = new BMap.PointCollection(pointss, options);
+
+    pointCollection.addEventListener('click', function(e) {
+      const { id, bx, by, name } = e.point;
+
+      const content = `
+        <div class="info-window">
+          <div class="BMap_bubble_title">
+            <p class="title-name" title="${name}">
+                ${name}
+            </p>
+          </div>
+          <div class="BMap_bubble_content">
+            <table class="content-table" cellspacing="0">
+              <tbody>
+                <tr>
+                  <td class="table-address">地址：&nbsp;</td>
+                  <td style="line-height:16px">${id}-${name}&nbsp;</td>
+                </tr>
+                <tr>
+                  <td class="table-address">坐标：&nbsp;</td>
+                  <td style="line-height:16px">(${bx}, ${by})&nbsp;</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+
+      const infowindow = new BMap.InfoWindow(content);
+
+      map.openInfoWindow(infowindow, new BMap.Point(bx, by));
+    });
+
     map.addOverlay(pointCollection);
 
     return pointCollection;

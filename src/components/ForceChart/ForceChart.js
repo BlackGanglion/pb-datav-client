@@ -12,8 +12,8 @@ import ForceChartSVG from './ForceChartSVG';
 
 import './ForceChart.scss';
 
-const width = 700;
-const height = 600;
+const width = 1000;
+const height = 800;
 
 @connect((state, ownProps) => {
   return {

@@ -3,6 +3,7 @@
 .portal-main {
   position: relative;
   background-color: #eee;
+  width: 1500px;
   &:before,
   &:after {
     content: " "; // 1
@@ -21,10 +22,10 @@
     float: left;
     margin-top: 10px;
     margin-left: 10px;
-    width: 700px;
+    width: 1000px;
     .portal-map {
-      width: 700px;
-      height: 600px;
+      width: 1000px;
+      height: 800px;
       margin-top: 10px;
     }
     .portal-main-list-control {
@@ -41,14 +42,14 @@
       width: 100%;
     }
     .portal-cluster-main {
-      width: 700px;
+      width: 1000px;
       position: relative;
       margin: 10px 0;
       border-radius: 5px;
       .portal-cluster {
         background-color: $background-primary;
         height: 52px;
-        width: 700px;
+        width: 1000px;
         overflow-x: scroll;
         padding-bottom: 8px;
         white-space: nowrap;
@@ -76,14 +77,14 @@
       }
     }
     .portal-nodes-main {
-      width: 700px;
+      width: 1000px;
       position: relative;
       margin: 10px 0;
       border-radius: 5px;
       .portal-nodes {
         background-color: $background-primary;
         height: 52px;
-        width: 700px;
+        width: 1000px;
         padding-bottom: 8px;
         overflow-x: scroll;
         white-space: nowrap;

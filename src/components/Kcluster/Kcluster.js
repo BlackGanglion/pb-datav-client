@@ -7,8 +7,8 @@ import { Progress, message } from 'antd';
 
 import './Kcluster.scss';
 
-const width = 870;
-const height = 550;
+const width = 1000;
+const height = 800;
 
 const xPadding = 50;
 const yPadding = 0;

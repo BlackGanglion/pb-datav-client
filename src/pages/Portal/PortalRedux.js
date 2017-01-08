@@ -42,7 +42,7 @@ const initialState = {
 
   // 力引导布局
   tabModelKey: "1",
-  selectedDate: '2014-03-23',
+  selectedDate: '2014-04-05',
   selectedHour: '-1',
   selectedCluster: {},
   selectedClusters: [],
