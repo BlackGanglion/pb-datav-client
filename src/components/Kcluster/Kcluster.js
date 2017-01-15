@@ -273,6 +273,7 @@ class Kcluster extends Component {
           x: this.centroids[i].x,
           y: this.centroids[i].y,
         },
+        selected: false,
       };
     });
   }

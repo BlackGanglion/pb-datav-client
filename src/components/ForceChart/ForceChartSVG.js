@@ -75,7 +75,7 @@ export default class ForceChartSVG extends PureComponent {
               })
             }
             if (tabModelKey === "2") {
-              this.props.kSelectedAreaLink(relations);
+              // this.props.kSelectedAreaLink(relations);
             }
           }}
         >

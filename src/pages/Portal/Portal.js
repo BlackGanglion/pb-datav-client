@@ -125,7 +125,7 @@ class Portal extends Component {
     }
 
     // 初始化地图圈画
-    circleLocalSearch(this.map, nodes, updateClusters);
+    circleLocalSearch(this.map, nodes, updateClusters, this.handleShowCluster.bind(this), this.getkAreaResult.bind(this));
 
     this.props.closeLoading();
 
@@ -149,9 +149,15 @@ class Portal extends Component {
     this.researchAreaLink = null;
     // 节点选择时
     this.selectedNodes = null;
-    this.forceMapShowLink = null;
 
+    // 区域内
     this.forceMapShowLink = null;
+    // 区域间
+    this.forceMapShowLinks = null;
+  }
+
+  getkAreaResult() {
+    return this.props.kAreaResult;
   }
 
   reInitMap(props) {
@@ -180,6 +186,52 @@ class Portal extends Component {
 
     if (this.props.allStaMethod !== nextProps.allStaMethod) {
       this.reInitMap(nextProps);
+    }
+
+    if (!_.isEqual(this.props.kAreaResult, nextProps.kAreaResult)) {
+      console.log('kAreaResult Change');
+      this.areaPolygon = convexHull(
+        this.map,
+        this.areaPolygon,
+        nextProps.kAreaResult,
+        nextProps.updateClusters,
+        this.handleShowCluster.bind(this),
+      );
+    }
+
+    if (nextProps.nodeLinkData.links) {
+      if (nextProps.researchModel !== this.props.researchModel
+        || !_.isEqual(nextProps.nodeLinkData, this.props.nodeLinkData)) {
+        // 先清除
+        clearAreaLink(this.forceMapShowLinks);
+
+        // showAreaLink(map, relations, allNodesList)
+        if (nextProps.researchModel === 'k') {
+          const { kAreaResult, nodeLinkData } = nextProps;
+          this.forceMapShowLinks = showAreaLink(this.map, nodeLinkData.links, kAreaResult.map((area, i) => {
+            return {
+              ...area,
+              id: i,
+              x: area.centroid.x,
+              y: area.centroid.y,
+              name: `k-means区域${i}`,
+            }
+          }));
+        }
+
+        if (nextProps.researchModel === 'p') {
+          const { nodeLinkData, researchClusters } = nextProps;
+          this.forceMapShowLinks = showAreaLink(this.map, nodeLinkData.links, researchClusters.map((area, i) => {
+            return {
+              ...area,
+              id: i,
+              x: area.centroid.x,
+              y: area.centroid.y,
+              name: `已选区域${i}`,
+            }
+          }));
+        }
+      }
     }
   }
 
@@ -223,12 +275,34 @@ class Portal extends Component {
   }
   */
 
-  handleShowCluster(index) {
-    // 将区域映射到地图上
+  handleShowCluster(index, area = {}) {
     const { clusters, kSelectedNodeFn } = this.props;
-    const cluster = clusters[index];
 
-    this.props.updateCluster(index, {
+    if (index !== -1) {
+      const cluster = clusters[index];
+
+      return this.props.updateCluster(index, {
+        ...cluster,
+        selected: true,
+        selectedHandler: showArea(this.map, cluster),
+      });
+    }
+
+    if (area.color) {
+      const index = _.findIndex(clusters, { color: area.color });
+      const cluster = clusters[index];
+
+      return this.props.updateCluster(index, {
+        ...cluster,
+        selected: true,
+        selectedHandler: showArea(this.map, cluster),
+      });
+    }
+
+    const i = clusters.length - 1;
+    const cluster = clusters[i];
+
+    return this.props.updateCluster(i, {
       ...cluster,
       selected: true,
       selectedHandler: showArea(this.map, cluster),
@@ -437,6 +511,7 @@ class Portal extends Component {
                   this.areaPolygon,
                   kAreaResult,
                   this.props.updateClusters,
+                  this.handleShowCluster.bind(this),
                 );
                 return this.props.changeIsShowKResult(true);
               }}
@@ -624,6 +699,7 @@ class Portal extends Component {
                   }}
                   onClick={() => {
                     this.clearKSelectedArea();
+                    clearAreaLink(this.forceMapShowLinks);
                   }}
                   size="small"
                   type="primary"
@@ -661,6 +737,7 @@ class Portal extends Component {
       this.areaPolygon,
       clusters,
       this.props.updateClusters,
+      this.handleShowCluster.bind(this),
     );
   }
 

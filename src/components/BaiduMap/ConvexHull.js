@@ -62,7 +62,8 @@ export {
   clearAreaPolygonNodes,
 }
 
-export default function (map, areaPolygon, clusters, updateClusters) {
+// k-means
+export default function (map, areaPolygon, clusters, updateClusters, handleShowCluster) {
   // 清空原有多边形
   clearAreaPolygon(map, areaPolygon);
 
@@ -83,10 +84,10 @@ export default function (map, areaPolygon, clusters, updateClusters) {
     });
     */
 
-    const { color, centroid } = cluster;
+    const { color, centroid, selected } = cluster;
 
     const nodeList = cluster.nodeList.map(({ x, y }) => {
-      return {x, y};
+      return { x, y };
     });
 
     const hullPoints = ch(nodeList).map((point) => {
@@ -96,8 +97,9 @@ export default function (map, areaPolygon, clusters, updateClusters) {
 
     const polygon = new BMap.Polygon(hullPoints,
       {
-        strokeColor: color,
+        strokeColor: selected ? 'grey' : color,
         strokeWeight: 4,
+        strokeOpacity: selected ? 0.1 : 1,
       }
     );
 
@@ -123,21 +125,44 @@ export default function (map, areaPolygon, clusters, updateClusters) {
         new BMap.Point(centroid.x - 0.001, centroid.y),
         new BMap.Point(centroid.x + 0.001, centroid.y),
       ],
-      { strokeColor: "red", strokeWeight: 6, strokeOpacity: 0.5, cursor: 'pointer' }
+      { strokeColor: selected ? 'grey' : color, strokeWeight: 6,
+        strokeOpacity: selected ? 0.1 : 0.8, cursor: 'pointer' }
     );
 
     const sLine = new BMap.Polyline([
         new BMap.Point(centroid.x, centroid.y - 0.001),
         new BMap.Point(centroid.x, centroid.y + 0.001),
       ],
-      { strokeColor: "red", strokeWeight: 6, strokeOpacity: 0.5, cursor: 'pointer' }
+      { strokeColor: selected ? 'grey' : color, strokeWeight: 6,
+        strokeOpacity: selected ? 0.1 : 0.8, cursor: 'pointer' }
     );
 
-    hLine.addEventListener("click", function(){
+    const point = new BMap.Point(centroid.x, centroid.y);
+    const opts = {
+      position: point,
+      offset: new BMap.Size(10, -10),
+    }
+    const label = new BMap.Label(`k区域${i}`, opts);
+    label.setStyle({
+      color : "red",
+      fontSize : "12px",
+      height : "20px",
+      lineHeight : "20px",
+    });
+
+    hLine.addEventListener("click", function() {
       confirm({
         title: '提醒',
         content: '是否添加该区域到区域栏',
-        onOk() { updateClusters([cluster]); },
+        onOk() {
+          if (!selected) {
+            updateClusters([cluster], i);
+
+            setTimeout(() => {
+              handleShowCluster(-1, cluster);
+            }, 0);
+          }
+        },
         onCancel() {},
       });
     });
@@ -146,18 +171,28 @@ export default function (map, areaPolygon, clusters, updateClusters) {
       confirm({
         title: '提醒',
         content: '是否添加该区域到区域栏',
-        onOk() { updateClusters([cluster]); },
+        onOk() {
+          if (!selected) {
+            updateClusters([cluster], i);
+
+            setTimeout(() => {
+              handleShowCluster(-1, cluster);
+            }, 0);
+          }
+        },
         onCancel() {},
       });
     });
 
     markers.push(hLine);
     markers.push(sLine);
+    markers.push(label);
 
     // map.addOverlay(marker);
     map.addOverlay(polygon);
     map.addOverlay(sLine);
     map.addOverlay(hLine);
+    map.addOverlay(label);
 
     newAreaPolygon.push(polygon);
   });

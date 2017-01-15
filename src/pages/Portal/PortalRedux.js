@@ -39,6 +39,7 @@ const initialState = {
   isClusterZoom: false,
   // K聚类结果
   kAreaResult: [],
+  kMeansKey: null,
 
   // 力引导布局
   tabModelKey: "1",
@@ -141,10 +142,11 @@ const kSelectedNodeFn = (nodeId) => {
 const UPDATE_CLUSTERS = ACTION_PREFIX + 'UPDATE_CLUSTERS';
 
 // 批量新增区域
-const updateClusters = (clusters) => {
+const updateClusters = (clusters, i = null) => {
   return {
     type: UPDATE_CLUSTERS,
     payload: clusters,
+    index: i,
   }
 }
 
@@ -566,7 +568,36 @@ function PortalReducer(state = initialState, action) {
     selectedHandler
     */
     case UPDATE_CLUSTERS: {
-      const { id, clusters } = state;
+      const { id, clusters, kAreaResult, kMeansKey } = state;
+      if (action.index !== null) {
+        return {
+          ...state,
+          clusters: [
+            ...clusters,
+            // id为编号，selected是否被选中
+            ...payload.map((item, i) => {
+              return {
+                ...item,
+                id: id + i,
+                selected: false,
+                selectedHandler: null,
+                kMeansKey,
+                kAreaIndex: action.index,
+              }
+            }),
+          ],
+          id: id + payload.length,
+          kAreaResult: kAreaResult.map((res, i) => {
+            if (i === action.index) {
+              return {
+                ...res,
+                selected: true,
+              }
+            }
+            return res;
+          }),
+        }
+      }
       return {
         ...state,
         clusters: [
@@ -632,6 +663,7 @@ function PortalReducer(state = initialState, action) {
         ...state,
         kAreaResult: payload,
         isShowKResult: true,
+        kMeansKey: Math.random(),
       }
     }
     case CHANGE_IS_SHOW_RESULT: {
@@ -662,15 +694,30 @@ function PortalReducer(state = initialState, action) {
     case DELECT_CLUSTER: {
       const newClusters = [];
 
+      let kAreaResult = state.kAreaResult;
       state.clusters.forEach((cluster, i) => {
         if (i !== payload) {
           newClusters.push(cluster);
+        } else {
+          const { kMeansKey, kAreaIndex } = cluster;
+          if (kMeansKey === state.kMeansKey) {
+            kAreaResult = kAreaResult.map((res, i) => {
+              if (i === kAreaIndex) {
+                return {
+                  ...res,
+                  selected: false,
+                }
+              }
+              return res;
+            });
+          }
         }
       });
 
       return {
         ...state,
         clusters: newClusters,
+        kAreaResult: kAreaResult,
       }
     }
     case DELECT_CLUSTERS: {

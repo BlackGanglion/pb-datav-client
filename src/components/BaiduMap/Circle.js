@@ -2,6 +2,8 @@ import _ from 'lodash';
 
 import { randomColor } from 'utils/utils';
 
+import { Modal } from 'antd';
+
 let storeOverlay = null;
 let localSearch = {
   clearResults: () => {},
@@ -16,7 +18,7 @@ export {
   clearCircle,
 }
 
-export default function circleLocalSearch(map, nodes, updateClusters) {
+export default function circleLocalSearch(map, nodes, updateClusters, handleShowCluster, getkAreaResult) {
   const options = {
     pageCapacity: 100,
     renderOptions: {
@@ -34,12 +36,18 @@ export default function circleLocalSearch(map, nodes, updateClusters) {
         nodeList.push(selectNode);
       }
 
+      console.log(nodeList);
+
       const res = [{
         nodeList,
         color: randomColor(),
       }];
 
       updateClusters(res);
+
+      setTimeout(() => {
+        handleShowCluster(-1);
+      }, 0);
     },
   };
 
@@ -53,7 +61,8 @@ export default function circleLocalSearch(map, nodes, updateClusters) {
       offset: new BMap.Size(5, 5), //偏离值
       scale: 0.8, //工具栏缩放比例
       drawingModes: [
-        BMAP_DRAWING_CIRCLE
+        BMAP_DRAWING_CIRCLE,
+        BMAP_DRAWING_POLYGON,
       ]
     }
   });
@@ -74,5 +83,42 @@ export default function circleLocalSearch(map, nodes, updateClusters) {
       }
     });
   });
-}
 
+  drawingManager.addEventListener('polygoncomplete', function(e, overlay) {
+    if (storeOverlay) map.removeOverlay(storeOverlay);
+
+    storeOverlay = overlay;
+
+    const kAreaResult = getkAreaResult();
+    // array <Point>
+    const polygonPointList = e.getPath();
+
+    const polygon = new BMap.Polygon(polygonPointList);
+
+    if (kAreaResult && kAreaResult.length > 1) {
+      // 多边形点阵
+      kAreaResult.forEach((area, i) => {
+        const { centroid } = area;
+        const { x, y } = centroid;
+
+        const centroidPoint = new BMap.Point(x, y);
+
+        const isInclude = BMapLib.GeoUtils.isPointInPolygon(centroidPoint, polygon);
+
+        if (isInclude && !area.selected) {
+          updateClusters([area], i);
+
+          setTimeout(() => {
+            handleShowCluster(-1, area);
+          }, 0);
+        }
+      });
+
+      return;
+    }
+    Modal.error({
+      title: '提醒',
+      content: '当前K-means聚类未执行或无效',
+    });
+  });
+}
