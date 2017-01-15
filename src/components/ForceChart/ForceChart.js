@@ -5,7 +5,7 @@ import { connect } from 'react-redux';
 import calculateForceChart from './calculateForceChart';
 import { actions } from './ForceRedux';
 
-import { Input, Button, Radio } from 'antd';
+import { Input, Button, Radio, Table } from 'antd';
 const RadioGroup = Radio.Group;
 
 import ForceChartSVG from './ForceChartSVG';
@@ -200,6 +200,7 @@ class ForceChart extends PureComponent {
       let res = `*Vertices ${nodes.length}\n`;
 
       const map = {};
+      const linkHash = {};
 
       nodes.forEach((node, i) => {
         res = res + ` ${i + 1} "v${node.id}"\n`;
@@ -211,9 +212,44 @@ class ForceChart extends PureComponent {
       links.forEach((link, i) => {
         const source = Number(map[link.source]);
         const target = Number(map[link.target]);
+        linkHash[`${link.source}-${link.target}`] = Number(link.value);
         const value = Number(link.value);
         res = res + ` ${source} ${target} ${value}.000000000000000\n`;
       });
+
+      const valueMap = nodes.map((iNode, i) => {
+        return nodes.map((jNode, j) => {
+          const value = linkHash[`${iNode.id}-${jNode.id}`];
+          return value ? value : 0;
+        });
+      });
+
+      console.log(valueMap);
+
+      const columns = [{
+        title: 'id',
+        dataIndex: 'id',
+        width: 50,
+      },
+      ...nodes.map((node, i) => {
+        return {
+          title: String(node.id),
+          dataIndex: String(node.id),
+          width: 50,
+        }
+      })];
+
+      const valueData = nodes.map((node, i) => {
+        const res = {};
+        res.key = i;
+        res.id = node.id;
+        for(let j = 0; j < nodes.length; j++) {
+          const value = linkHash[`${node.id}-${nodes[j].id}`];
+          res[nodes[j].id] = value ? value : 0;
+        }
+
+        return res;
+      })
 
       return (
         <div
@@ -228,6 +264,14 @@ class ForceChart extends PureComponent {
               type="textarea"
               rows={10}
               value={res}
+            />
+            <div>所选站点/区域间两两流量值(左方为起点，上方为终点)</div>
+            <Table
+              columns={columns}
+              dataSource={valueData}
+              bordered
+              pagination={false}
+              size="small"
             />
             <div>karate_comm_comboC++.txt</div>
             <Input

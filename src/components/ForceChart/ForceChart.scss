@@ -17,8 +17,11 @@
   background-color: $background-primary;
   position: relative;
   margin-bottom: 20px;
+  .ant-table {
+    overflow-x: auto !important;
+  }
   .combo-input {
-    width: 700px;
+    width: 1000px;
     height: 600px;
   }
   .force-chart-main {
