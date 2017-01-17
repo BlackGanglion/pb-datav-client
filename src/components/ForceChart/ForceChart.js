@@ -165,7 +165,7 @@ class ForceChart extends PureComponent {
       lastTime, kSelectedNodeFn, clubNodes,
       allNodesList, updateClusters, updateSelectedLink,
       changeMapLink, tabModelKey, kSelectedArea, kSelectedAreaLink,
-      isInputCombo, } = this.props;
+      isInputCombo, simNodeLinkData } = this.props;
 
     const { renderAreaOpen } = this.state;
 
@@ -196,6 +196,7 @@ class ForceChart extends PureComponent {
 
     if (!isInputCombo && !_.isEmpty(data)) {
       const { nodes, links } = data;
+      const { links: simLink } = simNodeLinkData;
 
       let res = `*Vertices ${nodes.length}\n`;
       let res2 = `*Vertices ${nodes.length}\n`;
@@ -212,7 +213,7 @@ class ForceChart extends PureComponent {
       res = res + '*Arcs\n';
       res2 = res2 + '*Arcs\n';
 
-      links.forEach((link, i) => {
+      simLink.forEach((link, i) => {
         const source = Number(map[link.source]);
         const target = Number(map[link.target]);
         link.relations.forEach((rel, j) => {
@@ -222,6 +223,11 @@ class ForceChart extends PureComponent {
             linkHash[`${rel.source}-${rel.target}`] = rel.value;
           }
         });
+      });
+
+      links.forEach((link, i) => {
+        const source = Number(map[link.source]);
+        const target = Number(map[link.target]);
         const value = Number(link.value);
         res = res + ` ${source} ${target} ${value}.000000000000000\n`;
         res2 = res2 + ` ${source} ${target} ${value}.000000000000000\n`;

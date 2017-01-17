@@ -820,7 +820,7 @@ class Portal extends Component {
       startSelectedDate, endSelectedDate,
       startSelectedHour, endSelectedHour,
       areaLineCluster, isShowtexts, forceUpdate,
-      isInputCombo, clubNumber,
+      isInputCombo, clubNumber, simNodeLinkData
     } = this.props;
 
     return (
@@ -911,6 +911,7 @@ class Portal extends Component {
             <ForceChart
               data={nodeLinkData}
               date={selectedDate}
+              simNodeLinkData={simNodeLinkData}
               hour={selectedHour}
               tabModelKey={tabModelKey}
               // 研究对象, 切换时清空

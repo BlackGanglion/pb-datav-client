@@ -49,6 +49,7 @@ const initialState = {
   selectedClusters: [],
   // 共用
   nodeLinkData: {},
+  simNodeLinkData: {},
   // combo配置导入
   isInputCombo: false,
   researchClusters: [],
@@ -646,7 +647,13 @@ function PortalReducer(state = initialState, action) {
     case GET_NODE_LINK_SUCCESS: {
       return {
         ...state,
-        nodeLinkData: payload,
+        simNodeLinkData: payload,
+        nodeLinkData: {
+          links: payload.links.filter((link) => {
+            return link.source !== link.target;
+          }),
+          nodes: payload.nodes,
+        },
       };
     }
     case CHANGE_ALL_STA_METHOD: {
@@ -759,7 +766,13 @@ function PortalReducer(state = initialState, action) {
     case CAL_CLUSTERS_DIS_SUCCESS: {
       return {
         ...state,
-        nodeLinkData: payload,
+        simNodeLinkData: payload,
+        nodeLinkData: {
+          links: payload.links.filter((link) => {
+            return link.source !== link.target;
+          }),
+          nodes: payload.nodes,
+        },
       }
     }
     case CAL_CLUSTERS_DIS: {
