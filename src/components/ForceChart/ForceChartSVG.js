@@ -60,11 +60,11 @@ export default class ForceChartSVG extends PureComponent {
           y2={targetNode.oy + (height / 2)}
           stroke={'red'}
           // 两种模式
-          strokeWidth={tabModelKey === "1" ? (1 + value / 4) : (1 + value / 500)}
+          strokeWidth={tabModelKey === "1" ? (1 + value / 4) : (1 + value / 300)}
           key={`line-${i}`}
           style={{
             cursor: "pointer",
-            opacity: tabModelKey === "1" ? value / 50 : value / 500,
+            opacity: 1,
           }}
           onClick={() => {
             if(tabModelKey === "1") {

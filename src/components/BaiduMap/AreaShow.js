@@ -82,7 +82,10 @@ function showArea(map, cluster, isShowNodes = true, index) {
     averageY = averageY + (e.y / count);
 
     if (isShowNodes) {
-      points.push(new BMap.Point(e.x, e.y));
+      points.push({
+        ...new BMap.Point(e.x, e.y),
+        ...e,
+      });
     }
 
     return {
@@ -99,6 +102,39 @@ function showArea(map, cluster, isShowNodes = true, index) {
       color: fillColor,
     }
     pointCollection = new BMap.PointCollection(points, options);
+
+    pointCollection.addEventListener('click', function(e) {
+      const { id, x, y, name } = e.point;
+
+      const content = `
+        <div class="info-window">
+          <div class="BMap_bubble_title">
+            <p class="title-name" title="${name}">
+                ${name}
+            </p>
+          </div>
+          <div class="BMap_bubble_content">
+            <table class="content-table" cellspacing="0">
+              <tbody>
+                <tr>
+                  <td class="table-address">地址：&nbsp;</td>
+                  <td style="line-height:16px">${id}-${name}&nbsp;</td>
+                </tr>
+                <tr>
+                  <td class="table-address">坐标：&nbsp;</td>
+                  <td style="line-height:16px">(${x}, ${y})&nbsp;</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+
+      const infowindow = new BMap.InfoWindow(content);
+
+      map.openInfoWindow(infowindow, new BMap.Point(x, y));
+    });
+
     map.addOverlay(pointCollection);
   }
 

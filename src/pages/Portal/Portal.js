@@ -18,7 +18,7 @@ const DEFAULT_Y = 30.2428426084585;
 
 import markersCluster from 'components/BaiduMap/MarkersCluster';
 import pointsCluster from 'components/BaiduMap/PointsCluster';
-import circleLocalSearch, { clearCircle } from 'components/BaiduMap/Circle';
+import { circleAreaSearch, circlePointSearch, clearCircle } from 'components/BaiduMap/Circle';
 import convexHull, { clearAreaPolygon, convexHullNodes, clearAreaPolygonNodes } from 'components/BaiduMap/ConvexHull'
 import Kcluster from 'components/Kcluster/Kcluster';
 import ForceChart from 'components/ForceChart/ForceChart';
@@ -89,16 +89,16 @@ class Portal extends Component {
   }
 
   kSelectedNodeFn(nodeId) {
-    if (this.props.isStartSelectNodes) {
+    // if (this.props.isStartSelectNodes) {
       const kSelectedNode = _.find(this.props.allNodesList, { id: nodeId });
       this.props.addSelectedNode(kSelectedNode);
 
       // 映射到地图上
       this.selectedNodes.push({
         id: nodeId,
-        handler: showNodes(this.map, kSelectedNode),
+        handler: showNodes(this.map2, kSelectedNode),
       });
-    }
+    // }
 
     this.props.kSelectedNodeFn(nodeId);
   }
@@ -107,25 +107,26 @@ class Portal extends Component {
     const { updateClusters, allStaMethod } = this.props;
     // 创建地图实例
     this.map = new BMap.Map("allmap");
+    this.map2 = new BMap.Map("allmap2");
     // 创建点坐标
     const point = new BMap.Point(DEFAULT_X, DEFAULT_Y);
 
     // 初始化地图，设置中心点坐标和地图级别
     this.map.centerAndZoom(point, 12);
+    this.map2.centerAndZoom(point, 12);
     // this.map.enableScrollWheelZoom();
 
     // 添加默认缩放平移控件
     this.map.addControl(new BMap.NavigationControl());
+    this.map2.addControl(new BMap.NavigationControl());
 
-    // 百度地图原生聚类
-    if (allStaMethod === 'cluster') {
-      this.markersCluster = markersCluster(this.map, nodes, this.kSelectedNodeFn.bind(this));
-    } else {
-      this.pointCollection = pointsCluster(this.map, nodes, this.kSelectedNodeFn.bind(this));
-    }
+    this.pointCollection = pointsCluster(this.map2, nodes, this.kSelectedNodeFn.bind(this));
 
-    // 初始化地图圈画
-    circleLocalSearch(this.map, nodes, updateClusters, this.handleShowCluster.bind(this), this.getkAreaResult.bind(this));
+    // 初始化地图多边形圈画
+    // 圈画区域
+    circlePointSearch(this.map2, nodes, this.kSelectedNodeFn.bind(this));
+    circleAreaSearch(this.map, nodes, updateClusters, this.handleShowCluster.bind(this), this.getkAreaResult.bind(this));
+    // 圈画点
 
     this.props.closeLoading();
 
@@ -139,6 +140,7 @@ class Portal extends Component {
 
   componentWillUnmount() {
     this.map = null;
+    this.map2 = null;
     this.pointCollection = null;
     this.markersCluster = null;
     // K-means显示
@@ -164,12 +166,12 @@ class Portal extends Component {
     const { allNodesList, allStaMethod } = props;
     if (allStaMethod === 'scatter' && this.map) {
       if (this.markersCluster) this.markersCluster.clearMarkers();
-      this.pointCollection = pointsCluster(this.map, allNodesList, this.kSelectedNodeFn.bind(this));
+      this.pointCollection = pointsCluster(this.map2, allNodesList, this.kSelectedNodeFn.bind(this));
     }
 
     if (allStaMethod === 'cluster' && this.map) {
       if (this.pointCollection) this.pointCollection.clear();
-      this.markersCluster = markersCluster(this.map, allNodesList, this.kSelectedNodeFn.bind(this));
+      this.markersCluster = markersCluster(this.map2, allNodesList, this.kSelectedNodeFn.bind(this));
     }
 
     if (allStaMethod === 'noMethod' && this.map) {
@@ -189,7 +191,6 @@ class Portal extends Component {
     }
 
     if (!_.isEqual(this.props.kAreaResult, nextProps.kAreaResult)) {
-      console.log('kAreaResult Change');
       this.areaPolygon = convexHull(
         this.map,
         this.areaPolygon,
@@ -536,7 +537,7 @@ class Portal extends Component {
             >{!isShowSResult ? '显示散点颜色划分结果' : '隐藏散点颜色划分结果'}</Button> : null}
           </div>
         </div>
-        <div className="portal-control-map">
+        {/* <div className="portal-control-map">
           <div className="portal-control-map-title">站点选择</div>
           <Button
             type="primary"
@@ -547,7 +548,7 @@ class Portal extends Component {
               return this.props.changeStartSelectNodes(true);
             }}
           >{isStartSelectNodes ? '结束站点选择' : '开始站点选择'}</Button>
-        </div>
+        </div> */}
         <div className="portal-control-force">
           <div className="portal-control-force-title">力导引布局</div>
           <Tabs defaultActiveKey={tabModelKey} onChange={(key) => {
@@ -836,33 +837,6 @@ class Portal extends Component {
             </div>
           </div>
           <div className="portal-main-list">
-            <div className="portal-map" id="allmap"></div>
-            <div className="portal-cluster-main">
-              <div className="portal-cluster">
-                {this.renderPortalCluster()}
-              </div>
-              <i className="icon icon-delete"
-                onClick={(e) => {
-                  const { clusters } = this.props;
-
-                  e.stopPropagation();
-                  const self = this;
-
-                  if (clusters && clusters.length > 0) {
-                    confirm({
-                      title: '提醒',
-                      content: '是否删除所有区域?',
-                      onOk() {
-                        clusters.forEach((cluster) => {
-                          clearArea(self.map, cluster.selectedHandler);
-                        });
-                        self.props.deleteClusters();
-                      },
-                      onCancel() {},
-                  });
-                }
-              }}></i>
-            </div>
             <div className="portal-nodes-main">
               <div className="portal-nodes">
                 {this.renderPortalNodes()}
@@ -908,6 +882,34 @@ class Portal extends Component {
                   }
                 }}></i>
             </div>
+            <div className="portal-map" id="allmap2"></div>
+            <div className="portal-cluster-main">
+              <div className="portal-cluster">
+                {this.renderPortalCluster()}
+              </div>
+              {/*<i className="icon icon-delete"
+                onClick={(e) => {
+                  const { clusters } = this.props;
+
+                  e.stopPropagation();
+                  const self = this;
+
+                  if (clusters && clusters.length > 0) {
+                    confirm({
+                      title: '提醒',
+                      content: '是否删除所有区域?',
+                      onOk() {
+                        clusters.forEach((cluster) => {
+                          clearArea(self.map, cluster.selectedHandler);
+                        });
+                        self.props.deleteClusters();
+                      },
+                      onCancel() {},
+                  });
+                }
+              }}></i> */}
+            </div>
+            <div className="portal-map" id="allmap"></div>
             <ForceChart
               data={nodeLinkData}
               date={selectedDate}

@@ -284,7 +284,7 @@ class ForceChart extends PureComponent {
               rows={10}
               value={res}
             />
-            <div>karate.net + 站点</div>
+            {/*<div>karate.net + 站点</div>
             <Input
               type="textarea"
               rows={10}
@@ -295,7 +295,7 @@ class ForceChart extends PureComponent {
               type="textarea"
               rows={10}
               value={res3 + valueMap}
-            />
+            />*/}
             <div>karate_comm_comboC++.txt</div>
             <Input
               type="textarea"

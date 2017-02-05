@@ -4,56 +4,16 @@ import { randomColor } from 'utils/utils';
 
 import { Modal } from 'antd';
 
-let storeOverlay = null;
-let localSearch = {
-  clearResults: () => {},
-}
+
+let pointOverlay;
 
 function clearCircle(map) {
-  if (storeOverlay) map.removeOverlay(storeOverlay);
-  if (localSearch) localSearch.clearResults();
+  if (pointOverlay) map.removeOverlay(pointOverlay);
 }
 
-export {
-  clearCircle,
-}
 
-export default function circleLocalSearch(map, nodes, updateClusters, handleShowCluster, getkAreaResult) {
-  const options = {
-    pageCapacity: 100,
-    renderOptions: {
-      map: map
-    },
-    onSearchComplete: function(results) {
-      const num = results.getCurrentNumPois();
-      const nodeList = [];
-      for(let i = 0; i < num; i++) {
-        const item = results.getPoi(i);
-        const id = Number(item.address.split('-')[0]);
-
-        const selectNode = _.find(nodes, { id });
-
-        nodeList.push(selectNode);
-      }
-
-      console.log(nodeList);
-
-      const res = [{
-        nodeList,
-        color: randomColor(),
-      }];
-
-      updateClusters(res);
-
-      setTimeout(() => {
-        handleShowCluster(-1);
-      }, 0);
-    },
-  };
-
-  localSearch = new BMap.LocalSearch(map, options);
-
-  const drawingManager = new BMapLib.DrawingManager(map, {
+function circlePointSearch(map, nodes, kSelectedNodeFn) {
+  const drawingPointManager = new BMapLib.DrawingManager(map, {
     isOpen: false, //是否开启绘制模式
     enableDrawingTool: true, //是否显示工具栏
     drawingToolOptions: {
@@ -67,27 +27,65 @@ export default function circleLocalSearch(map, nodes, updateClusters, handleShow
     }
   });
 
-  drawingManager.addEventListener('circlecomplete', function(e, overlay) {
-    if (storeOverlay) map.removeOverlay(storeOverlay);
-
-    storeOverlay = overlay;
-
-    map.addOverlay(overlay);
+  drawingPointManager.addEventListener('circlecomplete', function(e, overlay) {
+    pointOverlay = overlay;
+    drawingPointManager.close();
 
     const radius = parseInt(e.getRadius());
-    const center = e.getCenter();
-    drawingManager.close();
-    localSearch.searchNearby(' ', center, radius, {
-      customData: {
-        geotableId: 154106,
+    const { lat: centerY, lng: centerX } = e.getCenter();
+
+    const circle = new BMap.Circle(new BMap.Point(centerX, centerY), radius);
+
+    nodes.forEach((node, i) => {
+      const { x, y } = node;
+      const point = new BMap.Point(x, y);
+      if (BMapLib.GeoUtils.isPointInCircle(point, circle)) {
+        const id = Number(node.id);
+        kSelectedNodeFn(id);
       }
     });
+
+    map.removeOverlay(pointOverlay);
+  });
+
+  drawingPointManager.addEventListener('polygoncomplete', function(e, overlay) {
+    pointOverlay = overlay;
+    drawingPointManager.close();
+
+    // array <Point>
+    const polygonPointList = e.getPath();
+
+    const polygon = new BMap.Polygon(polygonPointList);
+
+    nodes.forEach((node, i) => {
+      const { x, y } = node;
+      const point = new BMap.Point(x, y);
+      if (BMapLib.GeoUtils.isPointInPolygon(point, polygon)) {
+        const id = Number(node.id);
+        kSelectedNodeFn(id);
+      }
+    });
+
+    map.removeOverlay(pointOverlay);
+  });
+}
+
+function circleAreaSearch(map, nodes, updateClusters, handleShowCluster, getkAreaResult) {
+  const drawingManager = new BMapLib.DrawingManager(map, {
+    isOpen: false, //是否开启绘制模式
+    enableDrawingTool: true, //是否显示工具栏
+    drawingToolOptions: {
+      anchor: BMAP_ANCHOR_TOP_RIGHT, //位置
+      offset: new BMap.Size(5, 5), //偏离值
+      scale: 0.8, //工具栏缩放比例
+      drawingModes: [
+        BMAP_DRAWING_POLYGON,
+      ]
+    }
   });
 
   drawingManager.addEventListener('polygoncomplete', function(e, overlay) {
-    if (storeOverlay) map.removeOverlay(storeOverlay);
-
-    storeOverlay = overlay;
+    pointOverlay = overlay;
 
     const kAreaResult = getkAreaResult();
     // array <Point>
@@ -114,6 +112,7 @@ export default function circleLocalSearch(map, nodes, updateClusters, handleShow
         }
       });
 
+      map.removeOverlay(pointOverlay);
       return;
     }
     Modal.error({
@@ -122,3 +121,11 @@ export default function circleLocalSearch(map, nodes, updateClusters, handleShow
     });
   });
 }
+
+export {
+  circlePointSearch,
+  circleAreaSearch,
+  clearPointCircle,
+  clearCircle,
+}
+

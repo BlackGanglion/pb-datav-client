@@ -103,24 +103,33 @@ export default function (map, areaPolygon, clusters, updateClusters, handleShowC
       }
     );
 
-    /*
     const pt = new BMap.Point(centroid.x, centroid.y);
 
     const marker = new BMap.Marker(pt, {icon: new BMap.Icon(
-      "https://img.alicdn.com/tps/TB1UmXtOFXXXXXNXVXXXXXXXXXX-48-48.png",
-      new BMap.Size(48, 48)
+      selected ?
+      "https://img.alicdn.com/tps/TB1YqdPPpXXXXajXVXXXXXXXXXX-32-32.png" :
+      "https://img.alicdn.com/tps/TB1XvNMPpXXXXbLXVXXXXXXXXXX-32-32.png",
+      new BMap.Size(32, 32)
     )});
 
     marker.addEventListener("click", function(){
-      confirm({
-        title: '提醒',
-        content: '是否添加该区域到区域栏',
-        onOk() { updateClusters([cluster]); },
-        onCancel() {},
-      });
+      if (!selected) {
+        confirm({
+          title: '提醒',
+          content: '是否添加该区域到区域栏',
+          onOk() {
+            updateClusters([cluster], i);
+            setTimeout(() => {
+              handleShowCluster(-1, cluster);
+            }, 0);
+          },
+          onCancel() {},
+        });
+      }
     });
-    */
 
+
+    /*
     const hLine = new BMap.Polyline([
         new BMap.Point(centroid.x - 0.001, centroid.y),
         new BMap.Point(centroid.x + 0.001, centroid.y),
@@ -136,20 +145,9 @@ export default function (map, areaPolygon, clusters, updateClusters, handleShowC
       { strokeColor: selected ? 'grey' : color, strokeWeight: 6,
         strokeOpacity: selected ? 0.1 : 0.8, cursor: 'pointer' }
     );
+    */
 
-    const point = new BMap.Point(centroid.x, centroid.y);
-    const opts = {
-      position: point,
-      offset: new BMap.Size(10, -10),
-    }
-    const label = new BMap.Label(`k区域${i}`, opts);
-    label.setStyle({
-      color : "red",
-      fontSize : "12px",
-      height : "20px",
-      lineHeight : "20px",
-    });
-
+    /*
     hLine.addEventListener("click", function() {
       confirm({
         title: '提醒',
@@ -187,12 +185,12 @@ export default function (map, areaPolygon, clusters, updateClusters, handleShowC
     markers.push(hLine);
     markers.push(sLine);
     markers.push(label);
+    */
 
-    // map.addOverlay(marker);
-    map.addOverlay(polygon);
-    map.addOverlay(sLine);
-    map.addOverlay(hLine);
-    map.addOverlay(label);
+    map.addOverlay(marker);
+    // map.addOverlay(polygon);
+    // map.addOverlay(sLine);
+    // map.addOverlay(hLine);
 
     newAreaPolygon.push(polygon);
   });
