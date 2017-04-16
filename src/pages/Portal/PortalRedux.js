@@ -65,7 +65,23 @@ const initialState = {
   areaLineCluster: null,
   isShowtexts: false,
   forceUpdate: false,
+
+  // 流量
+  flowMin: -1,
+  flowMax: -1,
 };
+
+const CHANG_FLOW = ACTION_PREFIX + 'CHANG_FLOW';
+
+const changeFlow = (flowMin, flowMax) => {
+  return {
+    type: CHANG_FLOW,
+    payload: {
+      flowMin,
+      flowMax,
+    },
+  }
+}
 
 const LOAD_ALLNODES_LIST = ACTION_PREFIX + 'LOAD_ALLNODES_LIST';
 const LOAD_ALLNODES_LIST_SUCCESS = ACTION_PREFIX + 'LOAD_ALLNODES_LIST_SUCCESS';
@@ -485,6 +501,8 @@ export const actions = {
   deleteSelectedNodes,
   joinSelectNodes,
   comboUpdate,
+
+  changeFlow,
 };
 
 function PortalReducer(state = initialState, action) {
@@ -845,6 +863,13 @@ function PortalReducer(state = initialState, action) {
         isStartSelectNodes: payload
       }
     }
+    case CHANG_FLOW: {
+      return {
+        ...state,
+        flowMin: payload.flowMin,
+        flowMax: payload.flowMax,
+      }
+    }  
     default:
       return state;
   }

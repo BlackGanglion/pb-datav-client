@@ -235,6 +235,15 @@ function clearLink(map) {
   }
 }
 
+function judgeColor(value) {
+  // console.log(value);
+  if (0 <= value && value < 0.1) return '#00ff00';
+  if (0.1 <= value && value < 0.2) return '#aaff00';
+  if (0.2 <= value && value < 0.4) return '#ffff00';
+  if (0.4 <= value && value < 0.6) return '#ff8000';
+  return '#ff0000';
+}
+
 function showAreaLink(map, relations, allNodesList) {
   // 归一化
   let max = -1;
@@ -249,7 +258,7 @@ function showAreaLink(map, relations, allNodesList) {
     const { source, target, value } = relation;
 
     const strokeOpacity = ((value - min) / (max - min)) + 0.05;
-    const strokeWeight = strokeOpacity * 5;
+    const strokeWeight = strokeOpacity * 10;
 
     const sourceItem = _.find(allNodesList, { id: Number(source) });
     const targetItem = _.find(allNodesList, { id: Number(target) });
@@ -260,10 +269,10 @@ function showAreaLink(map, relations, allNodesList) {
     const midX = ((Number(sourceItem.x) + Number(targetItem.x)) / 2).toFixed(6);
     const midY = ((Number(sourceItem.y) + Number(targetItem.y)) / 2).toFixed(6);
 
-    const middlePoint = new BMap.Point()
+    const middlePoint = new BMap.Point();
 
     const polyline = new BMap.Polyline([pointA, pointB],
-      { strokeColor: "blue", strokeWeight, strokeOpacity, }
+      { strokeColor: judgeColor((value - min) / (max - min)), strokeWeight }
     );
 
     polyline.addEventListener('mouseover', function(e) {

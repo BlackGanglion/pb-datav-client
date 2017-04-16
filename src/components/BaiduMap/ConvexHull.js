@@ -11,6 +11,9 @@ const confirm = Modal.confirm;
 
 let markers = [];
 
+const groupColorList = ['#00C49F', '#FFBB28', '#FF8441', '#EE3B61',
+  '#FF6590', '#9575DE', '#513AB7'];
+
 function clearAreaPolygon(map, areaPolygon) {
   if (areaPolygon && areaPolygon.length) {
     areaPolygon.forEach((area) => {
@@ -62,6 +65,20 @@ export {
   clearAreaPolygonNodes,
 }
 
+function getIcon(selected, realGroup) {
+  if (selected) return "https://img.alicdn.com/tfs/TB1f7a5QFXXXXXsXFXXXXXXXXXX-10-10.jpg";
+
+  if (realGroup == 0) return "https://img.alicdn.com/tfs/TB15_CRQFXXXXaNXVXXXXXXXXXX-10-10.jpg";
+  if (realGroup == 1) return "https://img.alicdn.com/tfs/TB19H5BQFXXXXbGaXXXXXXXXXXX-10-10.jpg";
+  if (realGroup == 2) return "https://img.alicdn.com/tfs/TB1o6O8QFXXXXc1XpXXXXXXXXXX-10-10.jpg";
+  if (realGroup == 3) return "https://img.alicdn.com/tfs/TB16LyLQFXXXXc9XVXXXXXXXXXX-10-10.jpg";
+  if (realGroup == 4) return "https://img.alicdn.com/tfs/TB1h7mTQFXXXXXtXVXXXXXXXXXX-10-10.jpg";
+  if (realGroup == 5) return "https://img.alicdn.com/tfs/TB11riTQFXXXXXFXVXXXXXXXXXX-10-10.jpg";
+  if (realGroup == 6) return "https://img.alicdn.com/tfs/TB1hP98QFXXXXcSXpXXXXXXXXXX-10-10.jpg";
+
+  return "https://img.alicdn.com/tfs/TB17ayzQFXXXXaiaXXXXXXXXXXX-10-10.jpg";
+}
+
 // k-means
 export default function (map, areaPolygon, clusters, updateClusters, handleShowCluster) {
   // 清空原有多边形
@@ -84,7 +101,7 @@ export default function (map, areaPolygon, clusters, updateClusters, handleShowC
     });
     */
 
-    const { color, centroid, selected } = cluster;
+    const { color, centroid, selected, realGroup } = cluster;
 
     const nodeList = cluster.nodeList.map(({ x, y }) => {
       return { x, y };
@@ -105,12 +122,12 @@ export default function (map, areaPolygon, clusters, updateClusters, handleShowC
 
     const pt = new BMap.Point(centroid.x, centroid.y);
 
-    const marker = new BMap.Marker(pt, {icon: new BMap.Icon(
-      selected ?
-      "https://img.alicdn.com/tps/TB1YqdPPpXXXXajXVXXXXXXXXXX-32-32.png" :
-      "https://img.alicdn.com/tps/TB1XvNMPpXXXXbLXVXXXXXXXXXX-32-32.png",
-      new BMap.Size(32, 32)
-    )});
+    const marker = new BMap.Marker(pt, {
+      icon: new BMap.Icon(
+        getIcon(selected, realGroup),
+        new BMap.Size(10, 10)
+      )
+    });
 
     marker.addEventListener("click", function(){
       if (!selected) {
@@ -188,6 +205,7 @@ export default function (map, areaPolygon, clusters, updateClusters, handleShowC
     */
 
     map.addOverlay(marker);
+    markers.push(marker);
     // map.addOverlay(polygon);
     // map.addOverlay(sLine);
     // map.addOverlay(hLine);

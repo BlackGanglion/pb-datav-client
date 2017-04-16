@@ -4,9 +4,11 @@ import { connect } from 'react-redux';
 import _ from 'lodash';
 import moment from 'moment';
 
-import { Menu, Icon, Spin, Input,
+import {
+  Menu, Icon, Spin, Input,
   Button, Progress, Modal, DatePicker, Select,
-  message, Tabs } from 'antd';
+  message, Tabs
+} from 'antd';
 const Option = Select.Option;
 const TabPane = Tabs.TabPane;
 const confirm = Modal.confirm;
@@ -23,18 +25,20 @@ import convexHull, { clearAreaPolygon, convexHullNodes, clearAreaPolygonNodes } 
 import Kcluster from 'components/Kcluster/Kcluster';
 import ForceChart from 'components/ForceChart/ForceChart';
 import AreaLine from 'components/AreaLine/AreaLine';
-import { showArea, clearArea,
+import {
+  showArea, clearArea,
   showLink, showAreaLink, clearAreaLink,
   showNodes, clearNodes, clearNode,
-  clearForceMapNode, showForceMapNode } from 'components/BaiduMap/AreaShow';
+  clearForceMapNode, showForceMapNode
+} from 'components/BaiduMap/AreaShow';
 
 @connect((state, ownProps) => {
   return {
     ...state.portal.page,
   };
 }, {
-  ...actions,
-})
+    ...actions,
+  })
 class Portal extends Component {
   static propTypes = {
     // store state
@@ -85,19 +89,21 @@ class Portal extends Component {
       isShowPanel: true,
       // id
       cluster: null,
+      flowMin: null,
+      flowMax: null,
     };
   }
 
   kSelectedNodeFn(nodeId) {
     // if (this.props.isStartSelectNodes) {
-      const kSelectedNode = _.find(this.props.allNodesList, { id: nodeId });
-      this.props.addSelectedNode(kSelectedNode);
+    const kSelectedNode = _.find(this.props.allNodesList, { id: nodeId });
+    this.props.addSelectedNode(kSelectedNode);
 
-      // 映射到地图上
-      this.selectedNodes.push({
-        id: nodeId,
-        handler: showNodes(this.map2, kSelectedNode),
-      });
+    // 映射到地图上
+    this.selectedNodes.push({
+      id: nodeId,
+      handler: showNodes(this.map2, kSelectedNode),
+    });
     // }
 
     this.props.kSelectedNodeFn(nodeId);
@@ -106,8 +112,25 @@ class Portal extends Component {
   initMap(nodes) {
     const { updateClusters, allStaMethod } = this.props;
     // 创建地图实例
+
+    const mapStyle = {
+      styleJson: [{
+        "featureType": "all",
+        "elementType": "all",
+        "stylers": {
+          "lightness": 10,
+          "saturation": -100
+        }
+      }],
+    };
+
     this.map = new BMap.Map("allmap");
+    this.map.setMapStyle(mapStyle);
+
     this.map2 = new BMap.Map("allmap2");
+    this.map2.setMapStyle(mapStyle);
+
+
     // 创建点坐标
     const point = new BMap.Point(DEFAULT_X, DEFAULT_Y);
 
@@ -202,27 +225,52 @@ class Portal extends Component {
 
     if (nextProps.nodeLinkData.links) {
       if (nextProps.researchModel !== this.props.researchModel
-        || !_.isEqual(nextProps.nodeLinkData, this.props.nodeLinkData)) {
+        || !_.isEqual(nextProps.nodeLinkData, this.props.nodeLinkData)
+        || nextProps.flowMin !== this.props.flowMin
+        // || nextProps.flowMax !== this.props.flowMax
+      ) {
         // 先清除
-        clearAreaLink(this.forceMapShowLinks);
+        clearAreaLink(this.map, this.forceMapShowLinks);
 
-        // showAreaLink(map, relations, allNodesList)
+        const links = nextProps.nodeLinkData.links.filter((link) => {
+          if (nextProps.flowMin !== -1 && Number(link.value) < Number(nextProps.flowMin)) return false;
+          // if (nextProps.flowMax !== -1 && link.value > nextProps.flowMax) return false;
+          return true;
+        });
+
         if (nextProps.researchModel === 'k') {
-          const { kAreaResult, nodeLinkData } = nextProps;
-          this.forceMapShowLinks = showAreaLink(this.map, nodeLinkData.links, kAreaResult.map((area, i) => {
+          const { kAreaResult } = nextProps;
+
+          if (nextProps.nodeLinkData.nodes[0].realGroup != null) {
+            this.areaPolygon = convexHull(
+              this.map,
+              this.areaPolygon,
+              nextProps.kAreaResult.map((area, i) => {
+                return {
+                  ...area,
+                  realGroup: nextProps.nodeLinkData.nodes[i].realGroup || -1,
+                };
+              }),
+              nextProps.updateClusters,
+              this.handleShowCluster.bind(this),
+            );
+          }
+
+          this.forceMapShowLinks = showAreaLink(this.map, links, kAreaResult.map((area, i) => {
             return {
               ...area,
               id: i,
               x: area.centroid.x,
               y: area.centroid.y,
               name: `k-means区域${i}`,
+              realGroup: nextProps.nodeLinkData.nodes[i].realGroup || -1,
             }
           }));
         }
 
         if (nextProps.researchModel === 'p') {
-          const { nodeLinkData, researchClusters } = nextProps;
-          this.forceMapShowLinks = showAreaLink(this.map, nodeLinkData.links, researchClusters.map((area, i) => {
+          const { researchClusters } = nextProps;
+          this.forceMapShowLinks = showAreaLink(this.map, links, researchClusters.map((area, i) => {
             return {
               ...area,
               id: i,
@@ -358,13 +406,13 @@ class Portal extends Component {
                   title: '提醒',
                   content: '是否删除当前区域?',
                   onOk() {
-                    if(selectedHandler) {
+                    if (selectedHandler) {
                       clearArea(self.map, cluster.selectedHandler);
                     }
 
                     self.props.deleteCluster(i);
                   },
-                  onCancel() {},
+                  onCancel() { },
                 });
               }}></i>
             {`区域${id} (${nodeList.length})`}
@@ -403,7 +451,7 @@ class Portal extends Component {
 
                     clearNode(self.map, self.selectedNodes, id);
                   },
-                  onCancel() {},
+                  onCancel() { },
                 });
               }}></i>
             {`${id}-${name}`}
@@ -418,13 +466,13 @@ class Portal extends Component {
     const { selectedKeys, clusterCount, clusterStatus,
       selectedDate, selectedHour, allStaMethod,
       isShowKResult, kAreaResult, isShowSResult, isStartSelectNodes,
-      tabModelKey, clusters, isShowtexts, forceUpdate } = this.props;
+      tabModelKey, clusters, isShowtexts, forceUpdate, nodeLinkData } = this.props;
 
     const options = [];
     options.push(
       <Option value="-1" key="-1">全天</Option>
     );
-    for(let i = 0; i <= 23; i++) {
+    for (let i = 0; i <= 23; i++) {
       if (i >= 10) {
         options.push(
           <Option value={String(i)} key={i}>{i}</Option>
@@ -444,6 +492,18 @@ class Portal extends Component {
         <Option value={String(i)} key={i}>{`区域${id}`}</Option>
       );
     });
+
+    let valueMin = null;
+    let valueMax = null;
+    if (nodeLinkData.links && nodeLinkData.links.length) {
+      valueMin = nodeLinkData.links[0].value;
+      valueMax = nodeLinkData.links[0].value;
+      nodeLinkData.links.forEach((link, i) => {
+        const { value } = link;
+        if (valueMin > value) { valueMin = value; }
+        if (valueMax < value) { valueMax = value; }
+      });
+    }
 
     return (
       <div>
@@ -620,7 +680,7 @@ class Portal extends Component {
                   onClick={() => {
                     // 未执行K-means提醒
 
-                    if(kAreaResult && kAreaResult.length > 2) {
+                    if (kAreaResult && kAreaResult.length > 2) {
                       this.setState({
                         isShowPanel: true,
                       })
@@ -700,7 +760,7 @@ class Portal extends Component {
                   }}
                   onClick={() => {
                     this.clearKSelectedArea();
-                    clearAreaLink(this.forceMapShowLinks);
+                    clearAreaLink(this.map, this.forceMapShowLinks);
                   }}
                   size="small"
                   type="primary"
@@ -724,6 +784,22 @@ class Portal extends Component {
                 >
                   {options}
                 </Select>
+              </div>
+              <div>
+                <span>{`车流量范围${valueMin}~${valueMax}`}</span>
+                <div style={{ width: '100%', background: 'rgb(255,255,178)', color: 'black' }}> 0 ~ 0.1 </div>
+                <div style={{ width: '100%', background: 'rgb(254,204,92)', color: 'white' }}> 0.1 ~ 0.2 </div>
+                <div style={{ width: '100%', background: 'rgb(253,141,60)', color: 'white' }}> 0.2 ~ 0.4 </div>
+                <div style={{ width: '100%', background: 'rgb(240,59,32)', color: 'white' }}> 0.4 ~ 0.6 </div>
+                <div style={{ width: '100%', background: 'rgb(189,0,38)', color: 'white' }}> 0.6 以上 </div>
+                <Input placeholder="输入最小值" value={this.state.flowMin || ''} onChange={(e) => {
+                  const value = e.target.value;
+                  this.setState({ flowMin: value });
+                }} />
+                <Button type="primary" onClick={() => {
+                  const { flowMin, flowMax } = this.state;
+                  this.props.changeFlow(flowMin, flowMax);
+                }}>确认</Button>
               </div>
             </TabPane>
           </Tabs>
@@ -782,7 +858,7 @@ class Portal extends Component {
         onOk() {
           self.researchAreaLink = showAreaLink(self.map, relations, allNodesList);
         },
-        onCancel() {},
+        onCancel() { },
       });
 
       return;
@@ -857,7 +933,7 @@ class Portal extends Component {
 
                         clearNodes(self.map, self.selectedNodes);
                       },
-                      onCancel() {},
+                      onCancel() { },
                     });
                   }
                 }}
@@ -877,7 +953,7 @@ class Portal extends Component {
 
                         clearNodes(self.map, self.selectedNodes);
                       },
-                      onCancel() {},
+                      onCancel() { },
                     });
                   }
                 }}></i>
@@ -925,13 +1001,13 @@ class Portal extends Component {
               updateSelectedLink={this.props.updateSelectedLink}
               changeMapLink={::this.changeMapLink}
               updateClusters={this.props.updateClusters}
-              // 区域间选择显示区域
-              kSelectedArea={::this.kSelectedArea}
+            // 区域间选择显示区域
+            kSelectedArea={::this.kSelectedArea}
               kSelectedAreaLink={::this.kSelectedAreaLink}
               isInputCombo={isInputCombo}
-              comboUpdate={this.props.comboUpdate}
-              clubNumber={this.props.clubNumber}
-              forceMapShow={this.forceMapShow.bind(this)}
+            comboUpdate={this.props.comboUpdate}
+            clubNumber={this.props.clubNumber}
+            forceMapShow={this.forceMapShow.bind(this)}
             />
             <Kcluster
               data={allNodesList}
@@ -948,9 +1024,9 @@ class Portal extends Component {
               updateConvexHull={::this.handleUpdateConvexHull}
               updateKAreaResult={this.props.updateKAreaResult}
             ></Kcluster>
-          </div>
         </div>
-      </Spin>
+        </div>
+      </Spin >
     )
   }
 }
