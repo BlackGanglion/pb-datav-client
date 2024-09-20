@@ -10,6 +10,7 @@ import './AreaLine.scss';
 
 const duration = 8000;
 
+
 @connect((state, ownProps) => {
   return {
     ...state.portal.areaLine,
